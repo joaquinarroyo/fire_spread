@@ -46,10 +46,8 @@ Fire simulate_fire(
 
   size_t n_row = landscape.height;
   size_t n_col = landscape.width;
-  size_t n_cell = n_row * n_col;
 
   std::vector<std::pair<size_t, size_t>> burned_ids;
-  burned_ids.reserve(n_cell);
 
   size_t start = 0;
   size_t end = ignition_cells.size();
@@ -82,25 +80,26 @@ Fire simulate_fire(
       const Cell& burning_cell = landscape[{ burning_cell_0, burning_cell_1 }];
 
       constexpr int moves[8][2] = { { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, -1 },
-                                       { 0, 1 },   { 1, -1 }, { 1, 0 },  { 1, 1 } };
+                                    { 0, 1 },   { 1, -1 }, { 1, 0 },  { 1, 1 } };
 
-      size_t neighbours_coords[2][8];
+      int neighbors_coords[2][8];
 
       for (size_t i = 0; i < 8; i++) {
-        neighbours_coords[0][i] = burned_ids[b].first + moves[i][0];
-        neighbours_coords[1][i] = burned_ids[b].second + moves[i][1];
+        neighbors_coords[0][i] = int(burning_cell_0) + moves[i][0];
+        neighbors_coords[1][i] = int(burning_cell_1) + moves[i][1];
       }
       // Note that in the case 0 - 1 we will have size_t_MAX
 
-      // Loop over neighbours_coords of the focal burning cell
+      // Loop over neighbors_coords of the focal burning cell
 
       for (size_t n = 0; n < 8; n++) {
 
-        size_t neighbour_cell_0 = neighbours_coords[0][n];
-        size_t neighbour_cell_1 = neighbours_coords[1][n];
+        int neighbour_cell_0 = neighbors_coords[0][n];
+        int neighbour_cell_1 = neighbors_coords[1][n];
 
         // Is the cell in range?
-        bool out_of_range = neighbour_cell_0 >= n_col || neighbour_cell_1 >= n_row;
+        bool out_of_range = 0 > neighbour_cell_0 || neighbour_cell_0 >= int(n_col) ||
+                            0 > neighbour_cell_1 || neighbour_cell_1 >= int(n_row);
 
         if (out_of_range)
           continue;
@@ -134,7 +133,7 @@ Fire simulate_fire(
         burned_ids.push_back({ neighbour_cell_0, neighbour_cell_1 });
         burned_bin[{ neighbour_cell_0, neighbour_cell_1 }] = true;
 
-      } // end loop over neighbours_coords of burning cell b
+      } // end loop over neighbors_coords of burning cell b
 
     } // end loop over burning cells from this cycle
 

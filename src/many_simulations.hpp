@@ -10,7 +10,7 @@
  * was burned.
  */
 Matrix<size_t> burned_amounts_per_cell(
-    Landscape landscape, std::vector<std::pair<size_t, size_t>> ignition_cells,
+    const Landscape& landscape, const std::vector<std::pair<size_t, size_t>>& ignition_cells,
     SimulationParams params, double distance, double elevation_mean, double elevation_sd,
     double upper_limit, size_t n_replicates
 );

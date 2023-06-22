@@ -23,7 +23,7 @@ Landscape::Landscape(std::string metadata_filename, std::string data_filename) :
   width = atoi((*metadata_csv)[0].data());
   height = atoi((*metadata_csv)[1].data());
 
-  cells = Matrix<Cell>(height, width);
+  cells = Matrix<Cell>(width, height);
 
   metadata_file.close();
 
@@ -36,24 +36,26 @@ Landscape::Landscape(std::string metadata_filename, std::string data_filename) :
   CSVIterator loop_csv(landscape_file);
   ++loop_csv;
 
-  for (size_t i = 0; i < width * height; i++, ++loop_csv) {
-    if (loop_csv == CSVIterator() || (*loop_csv).size() < 8) {
-      throw std::runtime_error("Invalid landscape file");
+  for (size_t j = 0; j < height; j++) {
+    for (size_t i = 0; i < width; i++, ++loop_csv) {
+      if (loop_csv == CSVIterator() || (*loop_csv).size() < 8) {
+        throw std::runtime_error("Invalid landscape file");
+      }
+      if (atoi((*loop_csv)[0].data()) == 1) {
+        cells[{i, j}].vegetation_type = SUBALPINE;
+      } else if (atoi((*loop_csv)[1].data()) == 1) {
+        cells[{i, j}].vegetation_type = WET;
+      } else if (atoi((*loop_csv)[2].data()) == 1) {
+        cells[{i, j}].vegetation_type = DRY;
+      } else {
+        cells[{i, j}].vegetation_type = MATORRAL;
+      }
+      cells[{i, j}].fwi = atof((*loop_csv)[3].data());
+      cells[{i, j}].aspect = atof((*loop_csv)[4].data());
+      cells[{i, j}].wind_direction = atof((*loop_csv)[5].data());
+      cells[{i, j}].elevation = atof((*loop_csv)[6].data());
+      cells[{i, j}].burnable = atoi((*loop_csv)[7].data());
     }
-    if (atoi((*loop_csv)[0].data()) == 1) {
-      cells.elems[i].vegetation_type = SUBALPINE;
-    } else if (atoi((*loop_csv)[1].data()) == 1) {
-      cells.elems[i].vegetation_type = WET;
-    } else if (atoi((*loop_csv)[2].data()) == 1) {
-      cells.elems[i].vegetation_type = DRY;
-    } else {
-      cells.elems[i].vegetation_type = MATORRAL;
-    }
-    cells.elems[i].fwi = atof((*loop_csv)[3].data());
-    cells.elems[i].aspect = atof((*loop_csv)[4].data());
-    cells.elems[i].wind_direction = atof((*loop_csv)[5].data());
-    cells.elems[i].elevation = atof((*loop_csv)[6].data());
-    cells.elems[i].burnable = atoi((*loop_csv)[7].data());
   }
 
   landscape_file.close();

@@ -11,15 +11,15 @@ enum VegetationType {
   DRY
 } __attribute__((packed)); // packed so that it takes only 1 byte
 
-//static_assert( sizeof(VegetationType) == 1 );
+static_assert( sizeof(VegetationType) == 1 );
 
 struct Cell {
-  float elevation;
-  float wind_direction;
+  double elevation;
+  double wind_direction;
   bool burnable;
   VegetationType vegetation_type;
-  float fwi;
-  float aspect;
+  double fwi;
+  double aspect;
 };
 
 struct Landscape {
