@@ -1,4 +1,5 @@
 #include <iostream>
+#include <random>
 
 #include "fires.hpp"
 #include "ignition_cells.hpp"
@@ -9,7 +10,7 @@
 #define DISTANCE 30
 #define ELEVATION_MEAN 1163.3
 #define ELEVATION_SD 399.5
-#define UPPER_LIMIT 0.5
+#define UPPER_LIMIT 0.75
 
 // main function reading command line arguments
 int main(int argc, char* argv[]) {
