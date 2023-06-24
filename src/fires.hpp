@@ -14,6 +14,9 @@ struct Fire {
 
   std::vector<std::pair<size_t, size_t>> burned_ids;
 
+  // Positions in burned_ids where a new step starts, empty if the fire was not simulated
+  std::vector<size_t> burned_ids_steps;
+
   bool operator==(const Fire& other) const {
     return width == other.width && height == other.height &&
            burned_layer == other.burned_layer && burned_ids == other.burned_ids;

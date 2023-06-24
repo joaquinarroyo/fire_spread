@@ -56,6 +56,9 @@ Fire simulate_fire(
     burned_ids.push_back(ignition_cells[i]);
   }
 
+  std::vector<size_t> burned_ids_steps;
+  burned_ids_steps.push_back(end);
+
   size_t burning_size = end + 1;
 
   Matrix<bool> burned_bin = Matrix<bool>(n_col, n_row);
@@ -132,17 +135,16 @@ Fire simulate_fire(
         end_forward += 1;
         burned_ids.push_back({ neighbour_cell_0, neighbour_cell_1 });
         burned_bin[{ neighbour_cell_0, neighbour_cell_1 }] = true;
-
-      } // end loop over neighbors_coords of burning cell b
-
-    } // end loop over burning cells from this cycle
+      }
+    }
 
     // update start and end
     start = end;
     end = end_forward;
     burning_size = end - start;
 
-  } // end while
+    burned_ids_steps.push_back(end);
+  }
 
-  return { n_col, n_row, burned_bin, burned_ids };
+  return { n_col, n_row, burned_bin, burned_ids, burned_ids_steps };
 }

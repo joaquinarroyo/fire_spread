@@ -35,7 +35,7 @@ Fire read_fire(size_t width, size_t height, std::string filename) {
 
   burned_ids_file.close();
 
-  return { width, height, burned_layer, burned_ids };
+  return { width, height, burned_layer, burned_ids, {} };
 }
 
 FireStats get_fire_stats(const Fire& fire, const Landscape& landscape) {
