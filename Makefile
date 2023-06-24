@@ -1,12 +1,8 @@
 CXX = g++
 CXXFLAGS = -Wall -Wextra -Werror
-
 CPPOPTFLAGS = -O2
-
 INCLUDE = -I./src
-
 CXXCMD = $(CXX) $(CXXFLAGS) $(CPPOPTFLAGS) $(INCLUDE)
-
 
 headers = $(wildcard ./src/*.hpp)
 sources = $(wildcard ./src/*.cpp)
@@ -23,9 +19,7 @@ all: $(mains)
 $(mains): %: %.cpp $(objects) $(headers)
 	$(CXXCMD) $< $(objects) -o $@
 
-
 clean:
 	rm -f $(objects) $(mains)
 
 .PHONY: all clean
-
