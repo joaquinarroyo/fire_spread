@@ -19,6 +19,12 @@ all: $(mains)
 $(mains): %: %.cpp $(objects) $(headers)
 	$(CXXCMD) $< $(objects) -o $@
 
+data.zip:
+	wget https://cs.famaf.unc.edu.ar/~nicolasw/data.zip
+
+data: data.zip
+	unzip data.zip
+
 clean:
 	rm -f $(objects) $(mains)
 

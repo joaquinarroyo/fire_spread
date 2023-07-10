@@ -5,3 +5,6 @@ graphics/fire_animation_data
 
 graphics/*.png
 graphics/*.mp4
+
+data/
+data.zip
