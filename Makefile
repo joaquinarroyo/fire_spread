@@ -1,8 +1,7 @@
 CXX = g++
 CXXFLAGS = -Wall -Wextra -Werror
-CPPOPTFLAGS = -O2
 INCLUDE = -I./src
-CXXCMD = $(CXX) $(CXXFLAGS) $(CPPOPTFLAGS) $(INCLUDE)
+CXXCMD = $(CXX) $(CXXFLAGS) $(INCLUDE)
 
 headers = $(wildcard ./src/*.hpp)
 sources = $(wildcard ./src/*.cpp)
