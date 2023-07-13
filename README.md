@@ -64,20 +64,24 @@ Con `make` se compila.
 Para generar una imagen de las probabilidades de quema de cada píxel:
 
 ```shell
-./graphics/burned_probabilities_data ./data/1999_27j_S | python ./graphics/draw_burned_probabilities.py 1999_27j_S_burned_probabilities.png
+./graphics/burned_probabilities_data ./data/1999_27j_S | python3 ./graphics/draw_burned_probabilities.py 1999_27j_S_burned_probabilities.png
 ```
 
 Para generar una animación de un incendio:
 
 ```shell
-./graphics/fire_animation_data ./data/2000_8 | python ./graphics/fire_animation.py 2000_8_fire_animation.mp4
+./graphics/fire_animation_data ./data/2000_8 | python3 ./graphics/fire_animation.py 2000_8_fire_animation.mp4
 ```
 
 ## Links
 
-- [Repositorio original del proyecto en computación paralela de 2023](https://github.com/IvanRenison/fire_spread_cp2023).
-
 - [Repositorio del código original en el cual fue basado el lab](https://github.com/barberaivan/fire_spread).
+- [Paper en el que se uso un método similar pero mas simple](https://ri.conicet.gov.ar/bitstream/handle/11336/38304/CONICET_Digital_Nro.d2f95f9f-ea7f-49ea-8ac4-593883434965_A.pdf?sequence=2).
+- [Paper sobre el método estadístico que se usaría para estimar parámetros](http://proceedings.mlr.press/v33/wilkinson14.pdf).
+
+## Sobre los datos
+
+Los datos que están en `data.zip` fueron originalmente extraídos de imágenes satelitales.
 
 ## Sobre el código
 
