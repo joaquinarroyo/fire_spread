@@ -1,5 +1,7 @@
 # Simulaciones de incendios
 
+Utilizado para materia Computación Paralela (2025) de FAMAF, UNC
+
 ## Modelo de la simulación
 
    En este proyecto se hacen simulaciones de incendios parametrizadas. La parametrización ocurre de la siguiente manera:
