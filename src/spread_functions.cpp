@@ -4,6 +4,8 @@
 #include <cmath>
 #include <random>
 #include <vector>
+#include <omp.h>
+#include <iostream>
 
 #include "fires.hpp"
 #include "landscape.hpp"
@@ -69,6 +71,7 @@ Fire simulate_fire(
     burned_bin[{ cell_0, cell_1 }] = 1;
   }
 
+  double start_time = omp_get_wtime();
   while (burning_size > 0) {
     size_t end_forward = end;
 
@@ -145,6 +148,8 @@ Fire simulate_fire(
 
     burned_ids_steps.push_back(end);
   }
-
+  double end_time = omp_get_wtime();
+  double metric = 0;
+  std::cout << "Time: " << end_time - start_time << ", Metric: " << metric << " cells/sec" << std::endl;
   return { n_col, n_row, burned_bin, burned_ids, burned_ids_steps };
 }

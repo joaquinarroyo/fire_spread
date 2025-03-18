@@ -10,9 +10,10 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
-
 from typing import Tuple
 
+FILENAME = "./graphics/simdata/burned_probabilities_data.txt"
+DIR = "./outputs/"
 
 def read_burned_amounts() -> Tuple[int, np.ndarray]:
     """
@@ -26,18 +27,19 @@ def read_burned_amounts() -> Tuple[int, np.ndarray]:
     74 82 79 73 0
     64 75 64 55 0
     """
-    _, _, width, height = input().split()
-    width, height = int(width), int(height)
-    _, simulations = input().split()
-    simulations = int(simulations)
-    burned_amounts = np.zeros((width, height), dtype=int)
-    for j in range(height):
-        line = input().split()
-        for i, amount in enumerate(line):
-            burned_amounts[i, j] = int(amount)
+    with open(FILENAME, "r") as file:
+        lines = file.readlines()
+        _, _, width, height = lines.pop(0).split()
+        width, height = int(width), int(height)
+        _, simulations = lines.pop(0).split()
+        simulations = int(simulations)
+        burned_amounts = np.zeros((width, height), dtype=int)
+        for j in range(height):
+            line = lines[j].split()
+            for i, amount in enumerate(line):
+                burned_amounts[i, j] = int(amount)
 
     return simulations, burned_amounts
-
 
 def draw_burned_probabilities(simulations: int, burned_amounts: np.ndarray, output_filename: str):
     """
@@ -51,15 +53,12 @@ def draw_burned_probabilities(simulations: int, burned_amounts: np.ndarray, outp
     plt.colorbar(im)
     plt.savefig(output_filename)
 
-
-
 def main():
     output_filename: str = "burned_probabilities.png"
     if len(sys.argv) > 1:
         output_filename = sys.argv[1]
     simulations, burned_amounts = read_burned_amounts()
-    draw_burned_probabilities(simulations, burned_amounts, output_filename)
-
+    draw_burned_probabilities(simulations, burned_amounts, f"{DIR}{output_filename}")
 
 if __name__ == "__main__":
     main()

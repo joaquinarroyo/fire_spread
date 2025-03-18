@@ -27,7 +27,7 @@ struct Landscape {
   size_t height;
 
   Landscape(size_t width, size_t height);
-  Landscape(std::string metadata_filename, std::string data_filename);
+  Landscape(std::string metadata_filename, std::string data_filename, size_t max_height, size_t max_width);
 
   Cell operator[](std::pair<size_t, size_t> index) const;
   Cell& operator[](std::pair<size_t, size_t> index);

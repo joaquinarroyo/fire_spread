@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <fstream>
 
 #include "ignition_cells.hpp"
 #include "landscape.hpp"
@@ -11,6 +12,9 @@
 #define ELEVATION_SD 399.5
 #define UPPER_LIMIT 0.5
 #define SIMULATIONS 100
+#define HEIGHT 20000
+#define WIDTH 20000
+#define FILENAME "graphics/simdata/burned_probabilities_data.txt"
 
 int main(int argc, char* argv[]) {
   try {
@@ -26,7 +30,7 @@ int main(int argc, char* argv[]) {
 
     // read the landscape
     Landscape landscape(
-        landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv"
+        landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv", HEIGHT, WIDTH
     );
 
     // read the ignition cells
@@ -41,18 +45,22 @@ int main(int argc, char* argv[]) {
         landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT,
         SIMULATIONS
     );
-    std::cout << "Landscape size: " << landscape.width << " " << landscape.height << std::endl;
-    std::cout << "Simulations: " << SIMULATIONS << std::endl;
+    // Abrir el archivo de salida y crear la cadena con información
+    std::ofstream outputFile(FILENAME);
+    outputFile << "Landscape size: " << landscape.width << " " << landscape.height << std::endl;
+    outputFile << "Simulations: " << SIMULATIONS << std::endl;
+    // Escribir los valores de burned_amounts en el archivo
     for (size_t i = 0; i < landscape.height; i++) {
-      for (size_t j = 0; j < landscape.width; j++) {
-        if (j != 0) {
-          std::cout << " ";
+        for (size_t j = 0; j < landscape.width; j++) {
+            if (j != 0) {
+                outputFile << " ";
+            }
+            outputFile << burned_amounts[{j, i}];
         }
-        std::cout << burned_amounts[{j, i}];
-      }
-      std::cout << std::endl;
+        outputFile << std::endl;
     }
-
+    // Cerrar archivo de salida
+    outputFile.close();
   } catch (std::runtime_error& e) {
     std::cerr << "ERROR: " << e.what() << std::endl;
     return EXIT_FAILURE;

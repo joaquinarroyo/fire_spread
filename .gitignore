@@ -2,9 +2,11 @@
 
 graphics/burned_probabilities_data
 graphics/fire_animation_data
+graphics/simdata/*.txt
 
-graphics/*.png
-graphics/*.mp4
+outputs/*.mp4
+outputs/*.png
 
 data/
 data.zip
+

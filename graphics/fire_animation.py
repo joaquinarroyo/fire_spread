@@ -11,9 +11,10 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
-
 from typing import List, Tuple
 
+FILENAME = "./graphics/simdata/fire_animation_data.txt"
+DIR = "./outputs/"
 
 def animate_fire(width: int, height: int, steps: List[List[Tuple[int, int]]]) -> animation.ArtistAnimation:
     """
@@ -51,7 +52,6 @@ def animate_fire(width: int, height: int, steps: List[List[Tuple[int, int]]]) ->
     anim = animation.ArtistAnimation(fig, images)
     return anim
 
-
 def read_fire() -> Tuple[int, int, List[List[Tuple[int, int]]]]:
     """
     Reads the fire from standard input
@@ -67,23 +67,20 @@ def read_fire() -> Tuple[int, int, List[List[Tuple[int, int]]]]:
     1 2
     1 1
     """
-    _, _, width, height = input().split()
-    width, height = int(width), int(height)
-    steps: List[List[Tuple[int, int]]] = []
-    while True:
-        try:
-            line: str = input()
-        except EOFError:
-            break
-        if line == "":
-            break
-        elif line[0:5] == "Step ":
-            steps.append([])
-        else:
-            x, y = line.split()
-            steps[-1].append((int(x), int(y)))
+    with open(FILENAME, "r") as file:
+        lines = file.readlines()
+        _, _, width, height = lines.pop(0).split()
+        width, height = int(width), int(height)
+        steps: List[List[Tuple[int, int]]] = []
+        for line in lines:
+            if line == "":
+                break
+            elif line[0:5] == "Step ":
+                steps.append([])
+            else:
+                x, y = line.split()
+                steps[-1].append((int(x), int(y)))
     return width, height, steps
-
 
 def main():
     # Get command line argument
@@ -92,8 +89,7 @@ def main():
         output_filename = sys.argv[1]
     width, height, steps = read_fire()
     anim = animate_fire(width, height, steps)
-    anim.save(output_filename, fps=5)
-
+    anim.save(f"{DIR}{output_filename}", fps=5)
 
 if __name__ == "__main__":
     main()

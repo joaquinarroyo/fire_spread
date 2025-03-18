@@ -1,5 +1,6 @@
 #include <iostream>
 #include <random>
+#include <fstream>
 
 #include "fires.hpp"
 #include "ignition_cells.hpp"
@@ -11,6 +12,9 @@
 #define ELEVATION_MEAN 1163.3
 #define ELEVATION_SD 399.5
 #define UPPER_LIMIT 0.75
+#define HEIGHT 100
+#define WIDTH 100
+#define FILENAME "graphics/simdata/fire_animation_data.txt"
 
 // main function reading command line arguments
 int main(int argc, char* argv[]) {
@@ -26,7 +30,7 @@ int main(int argc, char* argv[]) {
     std::string landscape_file_prefix = argv[1];
 
     // read the landscape
-    Landscape landscape(landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv");
+    Landscape landscape(landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv", HEIGHT, WIDTH);
 
     // read the ignition cells
     IgnitionCells ignition_cells =
@@ -41,23 +45,22 @@ int main(int argc, char* argv[]) {
         UPPER_LIMIT
     );
 
-    // Print the fire
-
-    std::cout << "Landscape size: " << landscape.width << " " << landscape.height << std::endl;
-
+    // Abrir el archivo de salida y crear la cadena con información
+    std::ofstream outputFile(FILENAME);
+    outputFile << "Landscape size: " << landscape.width << " " << landscape.height << std::endl;
     size_t step = 0;
     size_t i = 0;
     for (size_t j : fire.burned_ids_steps) {
       if (i >= j) {
         continue;
       }
-      std::cout << "Step " << step << ":" << std::endl;
+      outputFile << "Step " << step << ":" << std::endl;
       for (; i < j; i++) {
-        std::cout << fire.burned_ids[i].first << " " << fire.burned_ids[i].second << std::endl;
+        outputFile << fire.burned_ids[i].first << " " << fire.burned_ids[i].second << std::endl;
       }
       step++;
     }
-
+    outputFile.close();
   } catch (std::runtime_error& e) {
     std::cerr << "ERROR: " << e.what() << std::endl;
     return EXIT_FAILURE;
