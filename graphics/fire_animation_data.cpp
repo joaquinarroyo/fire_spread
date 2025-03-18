@@ -44,6 +44,13 @@ int main(int argc, char* argv[]) {
         landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD,
         UPPER_LIMIT
     );
+    size_t total_burned_cells = fire.burned_ids.size();
+    double time_taken = fire.time_taken;
+    double metric = total_burned_cells / time_taken;
+
+    std::cout << "  SIMULATION PERFORMANCE DATA" << std::endl;
+    std::cout << "* Total time taken: " << time_taken << " seconds" << std::endl;
+    std::cout << "* Metric: " << metric << " cells/sec processed" << std::endl;
 
     // Abrir el archivo de salida y crear la cadena con información
     std::ofstream outputFile(FILENAME);

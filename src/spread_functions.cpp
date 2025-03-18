@@ -149,7 +149,6 @@ Fire simulate_fire(
     burned_ids_steps.push_back(end);
   }
   double end_time = omp_get_wtime();
-  double metric = 0;
-  std::cout << "Time: " << end_time - start_time << ", Metric: " << metric << " cells/sec" << std::endl;
-  return { n_col, n_row, burned_bin, burned_ids, burned_ids_steps };
+  double time_taken = end_time - start_time;
+  return { n_col, n_row, time_taken, burned_bin, burned_ids, burned_ids_steps };
 }

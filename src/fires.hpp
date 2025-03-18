@@ -9,6 +9,7 @@
 struct Fire {
   size_t width;
   size_t height;
+  double time_taken; // time spent in the simulation
 
   Matrix<bool> burned_layer;
 
