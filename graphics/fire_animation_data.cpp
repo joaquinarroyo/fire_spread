@@ -12,8 +12,8 @@
 #define ELEVATION_MEAN 1163.3
 #define ELEVATION_SD 399.5
 #define UPPER_LIMIT 0.75
-#define HEIGHT 100
-#define WIDTH 100
+#define HEIGHT 20000
+#define WIDTH 20000
 #define FILENAME "graphics/simdata/fire_animation_data.txt"
 
 // main function reading command line arguments
@@ -41,16 +41,14 @@ int main(int argc, char* argv[]) {
     };
 
     Fire fire = simulate_fire(
-        landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD,
-        UPPER_LIMIT
+        landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT
     );
-    size_t total_burned_cells = fire.burned_ids.size();
     double time_taken = fire.time_taken;
-    double metric = total_burned_cells / time_taken;
+    double metric = fire.processed_cells / time_taken; // TODO: Revisar si lo hacemos en nanosegundos o esta bien asi
 
     std::cout << "  SIMULATION PERFORMANCE DATA" << std::endl;
     std::cout << "* Total time taken: " << time_taken << " seconds" << std::endl;
-    std::cout << "* Metric: " << metric << " cells/sec processed" << std::endl;
+    std::cout << "* Metric: " << metric << " cells/sec processed (N*M cells: worst case)" << std::endl;
 
     // Abrir el archivo de salida y crear la cadena con información
     std::ofstream outputFile(FILENAME);

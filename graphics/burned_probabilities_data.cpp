@@ -42,8 +42,7 @@ int main(int argc, char* argv[]) {
     };
 
     Matrix<size_t> burned_amounts = burned_amounts_per_cell(
-        landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT,
-        SIMULATIONS
+        landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT, SIMULATIONS
     );
     // Abrir el archivo de salida y crear la cadena con información
     std::ofstream outputFile(FILENAME);

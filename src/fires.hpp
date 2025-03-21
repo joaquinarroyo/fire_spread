@@ -9,6 +9,7 @@
 struct Fire {
   size_t width;
   size_t height;
+  size_t processed_cells; // number of cells processed in the simulation TODO: Revisar si usamos size_t o int
   double time_taken; // time spent in the simulation
 
   Matrix<bool> burned_layer;

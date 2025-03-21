@@ -45,6 +45,8 @@ Fire simulate_fire(
     SimulationParams params, double distance, double elevation_mean, double elevation_sd,
     double upper_limit = 1.0
 ) {
+  // For reproducibility of rand() function in the simulation
+  srand(420);
 
   size_t n_row = landscape.height;
   size_t n_col = landscape.width;
@@ -72,6 +74,7 @@ Fire simulate_fire(
   }
 
   double start_time = omp_get_wtime();
+  size_t processed_cells = 0;
   while (burning_size > 0) {
     size_t end_forward = end;
 
@@ -97,7 +100,6 @@ Fire simulate_fire(
       // Note that in the case 0 - 1 we will have size_t_MAX
 
       // Loop over neighbors_coords of the focal burning cell
-
       for (size_t n = 0; n < 8; n++) {
 
         int neighbour_cell_0 = neighbors_coords[0][n];
@@ -129,6 +131,7 @@ Fire simulate_fire(
         );
 
         // Burn with probability prob (Bernoulli)
+        processed_cells += 1;
         bool burn = (double)rand() / (double)RAND_MAX < prob;
 
         if (burn == 0)
@@ -145,10 +148,9 @@ Fire simulate_fire(
     start = end;
     end = end_forward;
     burning_size = end - start;
-
     burned_ids_steps.push_back(end);
   }
   double end_time = omp_get_wtime();
   double time_taken = end_time - start_time;
-  return { n_col, n_row, time_taken, burned_bin, burned_ids, burned_ids_steps };
+  return { n_col, n_row, processed_cells, time_taken, burned_bin, burned_ids, burned_ids_steps };
 }
