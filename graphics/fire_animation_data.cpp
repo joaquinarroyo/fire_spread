@@ -1,6 +1,7 @@
 #include <iostream>
 #include <random>
 #include <fstream>
+#include <limits>
 
 #include "fires.hpp"
 #include "ignition_cells.hpp"
@@ -14,6 +15,9 @@
 #define UPPER_LIMIT 0.75
 #define HEIGHT 20000
 #define WIDTH 20000
+#ifndef N_REPLICATES
+#define N_REPLICATES 100
+#endif
 #define FILENAME "graphics/simdata/fire_animation_data.txt"
 
 // main function reading command line arguments
@@ -40,15 +44,26 @@ int main(int argc, char* argv[]) {
       0, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2
     };
 
-    Fire fire = simulate_fire(
-        landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT
-    );
-    double time_taken = fire.time_taken;
-    double metric = fire.processed_cells / time_taken; // TODO: Revisar si lo hacemos en nanosegundos o esta bien asi
+    double min_metric = std::numeric_limits<double>::infinity();
+    double max_metric = 0;
+    double total_time_taken = 0;
+    Fire fire = empty_fire(landscape.width, landscape.height);
+    for (size_t i = 0; i < N_REPLICATES; i++) {
+      Fire fire = simulate_fire(
+          landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT
+      );
+      double time_taken = fire.time_taken;
+      double metric = fire.processed_cells / time_taken; // TODO: Revisar si lo hacemos en nanosegundos o esta bien asi
+      total_time_taken += time_taken;
+      min_metric = std::min(min_metric, metric);
+      max_metric = std::max(max_metric, metric);
+    }
 
     std::cout << "  SIMULATION PERFORMANCE DATA" << std::endl;
-    std::cout << "* Total time taken: " << time_taken << " seconds" << std::endl;
-    std::cout << "* Metric: " << metric << " cells/sec processed (N*M cells: worst case)" << std::endl;
+    std::cout << "* Total time taken: " << total_time_taken << " seconds" << std::endl;
+    std::cout << "* Average time: " << total_time_taken / N_REPLICATES << " seconds" << std::endl;
+    std::cout << "* Min metric: " << min_metric << " cells/sec processed" << std::endl;
+    std::cout << "* Max metric: " << max_metric << " cells/sec processed" << std::endl;
 
     // Abrir el archivo de salida y crear la cadena con información
     std::ofstream outputFile(FILENAME);

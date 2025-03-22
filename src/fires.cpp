@@ -38,6 +38,10 @@ Fire read_fire(size_t width, size_t height, std::string filename) {
   return { width, height, 0, 0, burned_layer, burned_ids, {} };
 }
 
+Fire empty_fire(size_t width, size_t height) {
+  return { width, height, 0, 0, Matrix<bool>(width, height), {}, {} };
+}
+
 FireStats get_fire_stats(const Fire& fire, const Landscape& landscape) {
 
   FireStats stats = { 0, 0, 0, 0 };

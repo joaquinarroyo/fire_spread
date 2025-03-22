@@ -1,6 +1,6 @@
 CXX = g++
-CXXFLAGS = -Wall -Wextra -Werror -fopenmp
-CCXOPTIMIZATIONS = -O1
+CXXFLAGS = -Wall -Wextra -Werror -fopenmp -march=native
+CCXOPTIMIZATIONS = -O1 -ffast-math -finline-functions -fhoist-adjacent-loads -fstore-merging -freorder-functions
 INCLUDE = -I./src
 CXXCMD = $(CXX) $(CXXFLAGS) $(CCXOPTIMIZATIONS) $(INCLUDE)
 

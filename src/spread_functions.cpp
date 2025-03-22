@@ -74,7 +74,7 @@ Fire simulate_fire(
   }
 
   double start_time = omp_get_wtime();
-  size_t processed_cells = 0;
+  int processed_cells = 0;
   while (burning_size > 0) {
     size_t end_forward = end;
 
@@ -113,6 +113,9 @@ Fire simulate_fire(
           continue;
 
         const Cell& neighbour_cell = landscape[{ neighbour_cell_0, neighbour_cell_1 }];
+        
+        // Add one to the number of processed cells
+        processed_cells += 1;
 
         // Is the cell burnable?
         bool burnable_cell =
@@ -131,7 +134,6 @@ Fire simulate_fire(
         );
 
         // Burn with probability prob (Bernoulli)
-        processed_cells += 1;
         bool burn = (double)rand() / (double)RAND_MAX < prob;
 
         if (burn == 0)
