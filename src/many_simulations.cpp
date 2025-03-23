@@ -2,7 +2,8 @@
 
 #include <iostream>
 #include <cmath>
-#include <limits>
+#include <fstream>
+#define PERF_FILENAME "graphics/simdata/burned_probabilities_perf_data.txt"
 
 Matrix<size_t> burned_amounts_per_cell(
     const Landscape& landscape, const std::vector<std::pair<size_t, size_t>>& ignition_cells,
@@ -31,6 +32,11 @@ Matrix<size_t> burned_amounts_per_cell(
       }
     }
   }
+
+  // Guardamos data de la performance para graficar
+  std::ofstream outputFile(PERF_FILENAME, std::ios::app);
+  outputFile << landscape.width * landscape.height << ", " << min_metric << ", " << max_metric << ", " << total_time_taken << std::endl;
+  outputFile.close();
 
   std::cout << "  SIMULATION PERFORMANCE DATA" << std::endl;
   std::cout << "* Total time taken: " << total_time_taken << " seconds" << std::endl;

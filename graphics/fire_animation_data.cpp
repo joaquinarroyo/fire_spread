@@ -1,7 +1,6 @@
 #include <iostream>
 #include <random>
 #include <fstream>
-#include <limits>
 
 #include "fires.hpp"
 #include "ignition_cells.hpp"
@@ -19,6 +18,7 @@
 #define N_REPLICATES 100
 #endif
 #define FILENAME "graphics/simdata/fire_animation_data.txt"
+#define PERF_FILENAME "graphics/simdata/fire_animation_perf_data.txt"
 
 // main function reading command line arguments
 int main(int argc, char* argv[]) {
@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
           landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT
       );
       double time_taken = fire.time_taken;
-      double metric = fire.processed_cells / time_taken; // TODO: Revisar si lo hacemos en nanosegundos o esta bien asi
+      double metric = fire.processed_cells / (time_taken * 1e6);
       total_time_taken += time_taken;
       min_metric = std::min(min_metric, metric);
       max_metric = std::max(max_metric, metric);
@@ -64,6 +64,11 @@ int main(int argc, char* argv[]) {
     std::cout << "* Average time: " << total_time_taken / N_REPLICATES << " seconds" << std::endl;
     std::cout << "* Min metric: " << min_metric << " cells/nanosec processed" << std::endl;
     std::cout << "* Max metric: " << max_metric << " cells/nanosec processed" << std::endl;
+
+    // Guardamos data de la performance para graficar
+    std::ofstream perfOutputFile(PERF_FILENAME, std::ios::app);
+    perfOutputFile << landscape.width * landscape.height << ", " << min_metric << ", " << max_metric << ", " << total_time_taken << std::endl;
+    perfOutputFile.close();
 
     // Abrir el archivo de salida y crear la cadena con información
     std::ofstream outputFile(FILENAME);
