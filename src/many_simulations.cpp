@@ -11,7 +11,7 @@ Matrix<size_t> burned_amounts_per_cell(
 ) {
 
   Matrix<size_t> burned_amounts(landscape.width, landscape.height);
-  double min_metric = std::numeric_limits<double>::infinity();
+  double min_metric = 1e15;
   double max_metric = 0;
   double total_time_taken = 0;
 
@@ -19,7 +19,7 @@ Matrix<size_t> burned_amounts_per_cell(
     Fire fire = simulate_fire(
         landscape, ignition_cells, params, distance, elevation_mean, elevation_sd, upper_limit
     );
-    double metric = fire.processed_cells / fire.time_taken; // TODO: Revisar si lo hacemos en nanosegundos o esta bien asi
+    double metric = fire.processed_cells / (fire.time_taken * 1e6);
     min_metric = std::min(min_metric, metric);
     max_metric = std::max(max_metric, metric);
     total_time_taken += fire.time_taken;
@@ -35,7 +35,7 @@ Matrix<size_t> burned_amounts_per_cell(
   std::cout << "  SIMULATION PERFORMANCE DATA" << std::endl;
   std::cout << "* Total time taken: " << total_time_taken << " seconds" << std::endl;
   std::cout << "* Average time: " << total_time_taken / n_replicates << " seconds" << std::endl;
-  std::cout << "* Min metric: " << min_metric << " cells/sec processed" << std::endl;
-  std::cout << "* Max metric: " << max_metric << " cells/sec processed" << std::endl;
+  std::cout << "* Min metric: " << min_metric << " cells/nanosec processed" << std::endl;
+  std::cout << "* Max metric: " << max_metric << " cells/nanosec processed" << std::endl;
   return burned_amounts;
 }

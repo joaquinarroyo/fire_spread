@@ -44,7 +44,7 @@ int main(int argc, char* argv[]) {
       0, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2
     };
 
-    double min_metric = std::numeric_limits<double>::infinity();
+    double min_metric = 1e15;
     double max_metric = 0;
     double total_time_taken = 0;
     Fire fire = empty_fire(landscape.width, landscape.height);
@@ -62,8 +62,8 @@ int main(int argc, char* argv[]) {
     std::cout << "  SIMULATION PERFORMANCE DATA" << std::endl;
     std::cout << "* Total time taken: " << total_time_taken << " seconds" << std::endl;
     std::cout << "* Average time: " << total_time_taken / N_REPLICATES << " seconds" << std::endl;
-    std::cout << "* Min metric: " << min_metric << " cells/sec processed" << std::endl;
-    std::cout << "* Max metric: " << max_metric << " cells/sec processed" << std::endl;
+    std::cout << "* Min metric: " << min_metric << " cells/nanosec processed" << std::endl;
+    std::cout << "* Max metric: " << max_metric << " cells/nanosec processed" << std::endl;
 
     // Abrir el archivo de salida y crear la cadena con información
     std::ofstream outputFile(FILENAME);
