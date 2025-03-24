@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import sys
 
 FILENAME = "./graphics/simdata/{}_perf_data.txt"
-DIR = "./outputs/"
+DIR = "./plots/"
 
 def read_perf_data(name):
     """
@@ -11,10 +11,14 @@ def read_perf_data(name):
     m*n, min_metric, max_metric, time
     """
     data = []
+    processed_cells = []
     with open(FILENAME.format(name), "r") as file:
         lines = file.readlines()
         for line in lines:
             cells, min_metric, max_metric, _ = line.split(",")
+            if int(cells) in processed_cells:
+                continue
+            processed_cells.append(int(cells))
             data.append((int(cells), float(min_metric), float(max_metric)))
     return data
 
