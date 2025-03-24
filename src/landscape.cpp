@@ -7,7 +7,7 @@
 Landscape::Landscape(size_t width, size_t height)
     : width(width), height(height), cells(width, height) {}
 
-Landscape::Landscape(std::string metadata_filename, std::string data_filename, size_t max_height, size_t max_width) : cells(0, 0) {
+Landscape::Landscape(std::string metadata_filename, std::string data_filename) : cells(0, 0) {
   std::ifstream metadata_file(metadata_filename);
 
   if (!metadata_file.is_open()) {
@@ -22,8 +22,6 @@ Landscape::Landscape(std::string metadata_filename, std::string data_filename, s
 
   width = atoi((*metadata_csv)[0].data());
   height = atoi((*metadata_csv)[1].data());
-  width = std::min(width, max_width);
-  height = std::min(height, max_height);
 
   cells = Matrix<Cell>(width, height);
 

@@ -12,8 +12,6 @@
 #define ELEVATION_MEAN 1163.3
 #define ELEVATION_SD 399.5
 #define UPPER_LIMIT 0.75
-#define HEIGHT 20000
-#define WIDTH 20000
 #ifndef N_REPLICATES
 #define N_REPLICATES 100
 #endif
@@ -34,7 +32,7 @@ int main(int argc, char* argv[]) {
     std::string landscape_file_prefix = argv[1];
 
     // read the landscape
-    Landscape landscape(landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv", HEIGHT, WIDTH);
+    Landscape landscape(landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv");
 
     // read the ignition cells
     IgnitionCells ignition_cells =

@@ -11,9 +11,9 @@
 #define ELEVATION_MEAN 1163.3
 #define ELEVATION_SD 399.5
 #define UPPER_LIMIT 0.5
-#define SIMULATIONS 100
-#define HEIGHT 20000
-#define WIDTH 20000
+#ifndef N_REPLICATES
+#define N_REPLICATES 100
+#endif
 #define FILENAME "graphics/simdata/burned_probabilities_data.txt"
 
 int main(int argc, char* argv[]) {
@@ -29,9 +29,7 @@ int main(int argc, char* argv[]) {
     std::string landscape_file_prefix = argv[1];
 
     // read the landscape
-    Landscape landscape(
-        landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv", HEIGHT, WIDTH
-    );
+    Landscape landscape(landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv");
 
     // read the ignition cells
     IgnitionCells ignition_cells =
@@ -42,12 +40,12 @@ int main(int argc, char* argv[]) {
     };
 
     Matrix<size_t> burned_amounts = burned_amounts_per_cell(
-        landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT, SIMULATIONS
+        landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT, N_REPLICATES
     );
     // Abrir el archivo de salida y crear la cadena con información
     std::ofstream outputFile(FILENAME);
     outputFile << "Landscape size: " << landscape.width << " " << landscape.height << std::endl;
-    outputFile << "Simulations: " << SIMULATIONS << std::endl;
+    outputFile << "Simulations: " << N_REPLICATES << std::endl;
     // Escribir los valores de burned_amounts en el archivo
     for (size_t i = 0; i < landscape.height; i++) {
         for (size_t j = 0; j < landscape.width; j++) {
