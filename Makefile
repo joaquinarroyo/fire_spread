@@ -4,7 +4,7 @@ CXXFLAGS = -Wall -Wextra -Werror -fopenmp -march=native
 INCLUDE = -I./src
 
 # Optimizaciones seguras por defecto
-CCXOPTIMIZATIONS = -O1 -ffast-math -finline-functions -fhoist-adjacent-loads -fstore-merging -freorder-functions
+CCXOPTIMIZATIONS = -O1 + ffast-math -funroll-loops -fprefetch-loop-arrays -fstore-merging -freorder-functions
 
 # Comando de compilación
 CXXCMD = $(CXX) $(CXXFLAGS) $(CCXOPTIMIZATIONS) $(INCLUDE)
