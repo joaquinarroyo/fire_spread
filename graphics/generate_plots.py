@@ -54,7 +54,7 @@ def generate_plots(data, name):
     max_metric = [x[2] for x in data]
     time = [x[3] for x in data]
     # First plot, metric performance
-    plt.ticklabel_format(axis='x', style='plain')  # eje X sin notación científica
+    plt.xscale("log")    
     plt.plot(cells, min_metric, label="Min processed cells/nanosecond")
     plt.plot(cells, max_metric, label="Max processed cells/nanosecond")
     plt.plot(cells, min_metric, "o", color="blue")

@@ -25,6 +25,6 @@ i=0
 for name in "${data[@]}"
 do
   echo "$i. Ejecutando $program sobre $name"
-  sudo perf stat -e cache-references,cache-misses,cycles,instructions ./graphics/$program ./data/$name 2>&1 | tee ./stats/$i\_$name.txt
+  sudo perf stat -e fp_ret_sse_avx_ops.all,cache-references,cache-misses,cycles,instructions ./graphics/$program ./data/$name 2>&1 | tee ./stats/$i\_$name.txt
   i=$((i+1))
 done
