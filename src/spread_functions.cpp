@@ -75,6 +75,10 @@ Fire simulate_fire(
 
   double start_time = omp_get_wtime();
   int processed_cells = 0;
+  constexpr int moves[8][2] = { { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, -1 },
+                                { 0, 1 },   { 1, -1 }, { 1, 0 },  { 1, 1 } };
+  constexpr double angles[8] = { M_PI * 3 / 4, M_PI, M_PI * 5 / 4, M_PI / 2, M_PI * 3 / 2,
+                                 M_PI / 4,     0,    M_PI * 7 / 4 };
   while (burning_size > 0) {
     size_t end_forward = end;
 
@@ -88,8 +92,6 @@ Fire simulate_fire(
 
       const Cell& burning_cell = landscape[{ burning_cell_0, burning_cell_1 }];
 
-      constexpr int moves[8][2] = { { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, -1 },
-                                    { 0, 1 },   { 1, -1 }, { 1, 0 },  { 1, 1 } };
 
       int neighbors_coords[2][8];
 
@@ -124,8 +126,6 @@ Fire simulate_fire(
         if (!burnable_cell)
           continue;
 
-        constexpr double angles[8] = { M_PI * 3 / 4, M_PI, M_PI * 5 / 4, M_PI / 2, M_PI * 3 / 2,
-                                       M_PI / 4,     0,    M_PI * 7 / 4 };
 
         // simulate fire
         double prob = spread_probability(
@@ -134,7 +134,7 @@ Fire simulate_fire(
         );
 
         // Burn with probability prob (Bernoulli)
-        bool burn = (double)rand() / (double)RAND_MAX < prob;
+        bool burn = rand() < prob * (RAND_MAX + 1.0);
 
         if (burn == 0)
           continue;

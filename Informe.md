@@ -12,14 +12,11 @@ Realizamos la optimización sobre la simuluación __burned_probabilities__.
 
 __Celdas procesadas x nanosegundo__: Es escalable para diferentes tamaños de simulación y mayor valor indica mejor rendimiento.
 
-__Otras métricas__: 
-
-- __Porcentaje de _cache-misses___: Mide la frecuencia con la que los accesos a memoria fallan en la caché y requieren ir a RAM.
-- ___IPC___: Representa la cantidad de instrucciones ejecutadas por ciclo de reloj. Un valor mayor sugiere un mejor aprovechamiento del procesador.
+__Porcentaje de _cache-hits___: Mide la frecuencia con la que los accesos a memoria cache son exitosos.
 
 Para el cálculo de la primer métrica, contamos cada celda procesada por cada simulación y el tiempo que tardó, luego calculamos la métrica como ```processed_cells / (seconds * 1e7)``` y nos quedamos con el valor mínimo y máximo.
 
-Para las otras dos métricas, utilizamos ```perf stat```.
+Para la otra métrica, utilizamos ```perf stat```.
 
 ## Optimización en g++
 
@@ -38,17 +35,34 @@ Tomamos un caso en particular de tamaño intermedio sobre el que aplicamos las s
 - Quitamos __-march=native__ ya que las heurísticas que utiliza a veces chocan con aquellas de las otras banderas elegidas.
 - Probamos las siguientes banderas sin notar mejora significativa: __-O2 -O3 -finline-functions -fhoist-adjacent-loads -mavx2 -mfma -funsafe-math-optimizations__.
 
+## Optimización en código
+
+Utilizando ```perf report``` vimos que en la comparación para ver si una celda se incendiaba o no, se realizaba una división de doubles lo cuál no es óptimo, por lo que modificamos el código de la siguiente manera:
+
+```
+Código previo:
+bool burn = (double)rand() / (double)RAND_MAX < prob;
+
+Código actual:
+bool burn = rand() < prob * (RAND_MAX + 1.0);
+```
+
+Luego de esto, notamos una pequeña mejora en el tiempo de ejecución y en las métricas analizadas.
+
 ## Otros compiladores
 
-### clang
-
-__COMPLETAR__
 
 ### icpx
 
-Notamos que de base tuvo mejor rendimiento que g++, pero a medida que agregamos banderas esta diferencia pasaba a estar a favor de g++. Otro punto a notar, que no todas las banderas que utilizamos para g++ están disponibles en icpx.
+Notamos que sin optimizaciones explícitas, icpx tuvo mejor rendimiento que g++, esto se da debido a que el primer compilador ya realiza optimizaciones de base.  A medida que agregamos banderas esta diferencia pasó a estar a favor de g++.
+
+### clang
+
+No logramos hacer funcionar las librerías para compilar el programa.
 
 ## Resultados
+
+Estos resultados fueron obtenidos sobre __Atom__.
 
 ### Gráficos
 
@@ -60,24 +74,22 @@ Observamos que, a medida que el tamaño aumenta, la métrica exhibe un comportam
 
 ### Comparación
 
+Utilizando data __1999_27j_S__:
+
 __Caso sin optimizar__
 
-- Tiempo total: 56.5 segundos
-- Celdas/Nanosegundo: 7.7 y 7.6
-- cache-misses: 35.56%
-- IPC: 1.78
+- __Tiempo total__: 56.5 segundos
+- __Celdas/Nanosegundo__: 7.6 mínimo y 7.7 máximo
+- __cache-hits__: 64.44%
 
 __Caso optimizado__
 
-- Tiempo total: 12.84 segundos
-- Celdas/Nanosegundo: 34.2 y 32.0
-- cache-misses: 26.20%
-- IPC: 1.90
+- __Tiempo total__: 12.27 segundos
+- __Celdas/Nanosegundo__: 34.8 mínimo y 35.7 máximo
+- __cache-hits__: 74.75%
 
 __Porcenaje de mejora final__
 
-- 77.26%
-- 321.05% y 344.16%
-- 26.34%
-- 6.74%
-
+- 78.28% reducción de tiempo de ejecucución
+- Entre 357.89% y 363.63% de mejora entre métrica de celda procesada por nanosegundo
+- 10% de mejora en __cache-hits__
