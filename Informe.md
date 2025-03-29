@@ -12,27 +12,28 @@ Realizamos la optimización sobre la simuluación __burned_probabilities__.
 
 __Celdas procesadas x nanosegundo__: Es escalable para diferentes tamaños de simulación y mayor valor indica mejor rendimiento.
 
+__FLOPS__: Mide la cantidad de operaciones de punto flotante por segundo.
+
 __Porcentaje de _cache-hits___: Mide la frecuencia con la que los accesos a memoria cache son exitosos.
 
-Para el cálculo de la primer métrica, contamos cada celda procesada por cada simulación y el tiempo que tardó, luego calculamos la métrica como ```processed_cells / (seconds * 1e7)``` y nos quedamos con el valor mínimo y máximo.
+Para el cálculo de la primer métrica, contamos cada celda procesada y el tiempo que tardó la simulación, y luego calculamos ```processed_cells / (seconds * 1e7)```.
 
-Para la otra métrica, utilizamos ```perf stat```.
+Para las demás métricas, utilizamos datos obtenidos con ```perf stat```.
 
 ## Optimización en g++
 
-Tomamos un caso en particular de tamaño intermedio sobre el que aplicamos las siguientes optimizaciones:
+Tomamos un caso en particular de tamaño intermedio sobre el cuál experimentamos hasta conseguir las siguiente combinación de optimizaciones:
 
 ```
--O1 + ffast-math -funroll-loops -fprefetch-loop-arrays -fstore-merging -freorder-functions
+-O1 -ffast-math -funroll-loops -fprefetch-loop-arrays -freorder-functions
 ```
 
-- __O1__: Bandera de múltiples mejoras que presenta mayor eficiencia.
-- __fast-math__: Optimiza operaciones flotantes, impacto alto porque tenemos muchas operaciones con doubles.
+- __O1__: Bandera que utiliza múltiples optimizaciones tales como ```-freorder-blocks, -fforward-propagate, etc.```.
+- __fast-math__: Optimiza operaciones de punto flotante. Alto impacto ya que nuestro código realiza muchas operaciones de este tipo.
 - __unroll-loops__: Aplana loops en lo posible, impacto alto porque nuestros loops tienen condiciones predecibles.
-- __prefetch-loop-arrays__: Precarga datos aser usados en loops, impacto medio porque nuestra estructura ppal es un arreglo que no entra en L1, L2.
-- __store-merging__: Hace más eficiente el acceso a estructuras largas almacenadas, impacto medio porque nuestra estructura ppal es grande pero de ítems pequeños.
-- __reorder-functions__: Reordena el código en memoria según su utilización, impacto medio porque condensa juntas las partes del código con mayor acceso a memoria.
-- Quitamos __-march=native__ ya que las heurísticas que utiliza a veces chocan con aquellas de las otras banderas elegidas.
+- __prefetch-loop-arrays__: Precarga datos a ser usados en bucles. Su impacto es medio, ya que nuestra estructura principal es una matriz que, a partir de ciertos tamaños, no entra en las cachés L1 ni L2.
+- __reorder-functions__: Reordena el código en el archivo de salida según su orden de uso o probabilidad de ser llamadas juntas. Notamos una mejora mínima en el rendimiento.
+- Quitamos __-march=native__ ya que las heurísticas que utiliza aveces chocan con aquellas de las otras banderas elegidas obteniendo resultados peores.
 - Probamos las siguientes banderas sin notar mejora significativa: __-O2 -O3 -finline-functions -fhoist-adjacent-loads -mavx2 -mfma -funsafe-math-optimizations__.
 
 ## Optimización en código
@@ -78,18 +79,21 @@ Utilizando data __1999_27j_S__:
 
 __Caso sin optimizar__
 
-- __Tiempo total__: 56.5 segundos
-- __Celdas/Nanosegundo__: 7.6 mínimo y 7.7 máximo
-- __cache-hits__: 64.44%
+- __Tiempo total__: 52.06
+- __Celdas x Nanosegundo__: 7.97 mínimo y 8.47 máximo
+- __FLOPS__: 32.3e7
+- __cache-hits__: 68.56%
 
 __Caso optimizado__
 
-- __Tiempo total__: 12.27 segundos
-- __Celdas/Nanosegundo__: 34.8 mínimo y 35.7 máximo
-- __cache-hits__: 74.75%
+- __Tiempo total__: 11.74
+- __Celdas x Nanosegundo__: 31.36 mínimo y 37.62 máximo
+- __FLOPS__: 102e7
+- __cache-hits__: 75.20%
 
-__Porcenaje de mejora final__
+__Conclusiones__
 
-- 78.28% reducción de tiempo de ejecucución
-- Entre 357.89% y 363.63% de mejora entre métrica de celda procesada por nanosegundo
-- 10% de mejora en __cache-hits__
+- 77.45% reducción de tiempo de ejecucución.
+- Entre 293.48% y 344.16% de mejora entre métrica de celda procesada por nanosegundo.
+- 215.79% de mejora en FLOPS .
+- 7 puntos porcentuales de mejora en __cache-hits__.
