@@ -66,10 +66,10 @@ Estos resultados fueron obtenidos sobre __Atom__.
 
 ### Gráficos
 
-![](final_plots/burned_probabilities_perf.png)
+![](../final_plots/burned_probabilities_perf.png)
 
 
-![](final_plots/burned_probabilities_time.png)
+![](../final_plots/burned_probabilities_time.png)
 
 ### Comparación
 
@@ -95,3 +95,50 @@ __Conclusiones__
 - Entre 293.48% y 344.16% de mejora entre métrica de celda procesada por nanosegundo.
 - 215.79% de mejora en FLOPS .
 - 7 puntos porcentuales de mejora en __cache-hits__.
+
+__Descripción del Video con Benchmarks__
+
+[Video](https://youtu.be/nQsPRysa6mE)
+
+```
+Integrantes: Arroyo Joaquín y Bolzan Francisco
+Laboratorio: fire_spread
+
+Todos los resultados fueron obtenidos en Atom, tal como se menciona en el video.
+
+CPU:
+- Modelo: AMD EPYC 7643 48-Core Processor @ 3.64 GHz
+- Cantidad de cores físicos: 48
+- Hilos por core: 1
+- Total de hilos disponibles: 48
+- Arquitectura: x86_64
+- Virtualización: AMD-V
+- Cachés:
+  - L1d: 1.5 MiB (48×)
+  - L1i: 1.5 MiB (48×)
+  - L2: 24 MiB (48×)
+  - L3: 256 MiB (8×)
+
+Benchmark DGEMM (double):
+- Tamaño de matrices: 19500×19500
+- Tiempo de ejecución: 12.948246 s
+- Rendimiento: 1,145,309.57 MFLOPS → ~1.15 TFLOPS
+
+Benchmark SGEMM (float):
+- Tamaño de matrices: 19500×19500
+- Tiempo de ejecución: 6.508257 s
+- Rendimiento: 2,278,605.47 MFLOPS → ~2.28 TFLOPS
+
+Benchmark de Memoria (STREAM):
+- Ancho de banda (Triad): 30,033.5 MB/s → ~30.0 GB/s (48 hilos)
+
+Sistema Operativo:
+- Distribución: Debian
+- Codename: trixie
+- Versión: sid (inestable, rolling release)
+- Arquitectura: x86_64
+
+Compiladores:
+- g++ (Debian 14.2.0-16) 14.2.0
+- icpx
+```
