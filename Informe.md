@@ -1,8 +1,8 @@
 # Informe I
 
-__Laboratorio__: fire_spread
-
 __Integrantes__: Arroyo Joaquin y Bolzan Francisco
+
+__Laboratorio__: fire_spread
 
 ## Notas
 
@@ -33,8 +33,17 @@ Tomamos un caso en particular de tamaño intermedio sobre el cuál experimentamo
 - __unroll-loops__: Aplana loops en lo posible, impacto alto porque nuestros loops tienen condiciones predecibles.
 - __prefetch-loop-arrays__: Precarga datos a ser usados en bucles. Su impacto es medio, ya que nuestra estructura principal es una matriz que, a partir de ciertos tamaños, no entra en las cachés L1 ni L2.
 - __reorder-functions__: Reordena el código en el archivo de salida según su orden de uso o probabilidad de ser llamadas juntas. Notamos una mejora mínima en el rendimiento.
-- Quitamos __-march=native__ ya que las heurísticas que utiliza aveces chocan con aquellas de las otras banderas elegidas obteniendo resultados peores.
 - Probamos las siguientes banderas sin notar mejora significativa: __-O2 -O3 -finline-functions -fhoist-adjacent-loads -mavx2 -mfma -funsafe-math-optimizations__.
+
+## Otros compiladores
+
+### icpx
+
+Notamos que sin optimizaciones explícitas, icpx tuvo mejor rendimiento que g++, esto se da debido a que el primer compilador ya realiza optimizaciones de base.  A medida que agregamos banderas esta diferencia pasó a estar a favor de g++.
+
+### clang
+
+No logramos hacer funcionar las librerías para compilar el programa.
 
 ## Optimización en código
 
@@ -50,16 +59,6 @@ bool burn = rand() < prob * (RAND_MAX + 1.0);
 
 Luego de esto, notamos una pequeña mejora en el tiempo de ejecución y en las métricas analizadas.
 
-## Otros compiladores
-
-
-### icpx
-
-Notamos que sin optimizaciones explícitas, icpx tuvo mejor rendimiento que g++, esto se da debido a que el primer compilador ya realiza optimizaciones de base.  A medida que agregamos banderas esta diferencia pasó a estar a favor de g++.
-
-### clang
-
-No logramos hacer funcionar las librerías para compilar el programa.
 
 ## Resultados
 
@@ -69,7 +68,6 @@ Estos resultados fueron obtenidos sobre __Atom__.
 
 ![](final_plots/burned_probabilities_perf.png)
 
-Observamos que, a medida que el tamaño aumenta, la métrica exhibe un comportamiento asintótico. Además, la diferencia entre la métrica mínima y la métrica máxima disminuye conforme el tamaño crece, lo que se debe a que el _system noise_ es más significativo en tamaños pequeños.
 
 ![](final_plots/burned_probabilities_time.png)
 
