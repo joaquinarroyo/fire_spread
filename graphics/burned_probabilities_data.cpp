@@ -7,10 +7,10 @@
 #include "many_simulations.hpp"
 #include "spread_functions.hpp"
 
-#define DISTANCE 30
-#define ELEVATION_MEAN 1163.3
-#define ELEVATION_SD 399.5
-#define UPPER_LIMIT 0.5
+#define DISTANCE 30.0f
+#define ELEVATION_MEAN 1163.3f
+#define ELEVATION_SD 399.5f
+#define UPPER_LIMIT 0.5f
 #ifndef N_REPLICATES
 #define N_REPLICATES 100
 #endif
@@ -36,7 +36,7 @@ int main(int argc, char* argv[]) {
         read_ignition_cells(landscape_file_prefix + "-ignition_points.csv");
 
     SimulationParams params = {
-      0, 0.5, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.2
+      0.0f, 0.5f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f, 0.2f
     };
 
     Matrix<size_t> burned_amounts = burned_amounts_per_cell(
