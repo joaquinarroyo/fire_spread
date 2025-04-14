@@ -4,7 +4,7 @@ CXXFLAGS = -Wall -Wextra -Werror -fopenmp
 INCLUDE = -I./src
 
 # Optimizaciones seguras por defecto
-CCXOPTIMIZATIONS = -O1 -ffast-math -funroll-loops -fprefetch-loop-arrays
+CCXOPTIMIZATIONS = -O1 -ffast-math -funroll-loops -fprefetch-loop-arrays -fopt-info
 
 # Comando de compilación
 CXXCMD = $(CXX) $(CXXFLAGS) $(CCXOPTIMIZATIONS) $(INCLUDE)

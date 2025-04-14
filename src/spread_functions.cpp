@@ -12,7 +12,7 @@
 
 constexpr float PIf = 3.1415927f;  // float PI
 
-float spread_probability(
+inline float spread_probability(
     const Cell& burning, const Cell& neighbour, SimulationParams params, float angle,
     float distance, float elevation_mean, float elevation_sd, float upper_limit = 1.0
 ) {
@@ -78,9 +78,9 @@ Fire simulate_fire(
   double start_time = omp_get_wtime();
   int processed_cells = 0;
   constexpr int moves[8][2] = { { -1, -1 }, { -1, 0 }, { -1, 1 }, { 0, -1 },
-                                { 0, 1 },   { 1, -1 }, { 1, 0 },  { 1, 1 } };
-  constexpr float angles[8] = { PIf * 3 / 4, PIf, PIf * 5 / 4, PIf / 2, PIf * 3 / 2,
-                                 PIf / 4,     0,    PIf * 7 / 4 };
+                                { 0, 1 }, { 1, -1 }, { 1, 0 }, { 1, 1 } };
+  constexpr float angles[8] = { PIf * 3 / 4, PIf, PIf * 5 / 4, PIf / 2, 
+                                PIf * 3 / 2, PIf / 4, 0, PIf * 7 / 4 };
   while (burning_size > 0) {
     size_t end_forward = end;
 
@@ -97,6 +97,7 @@ Fire simulate_fire(
 
       int neighbors_coords[2][8];
 
+      // TODO: Aca podemos ver de vectorizar
       for (size_t i = 0; i < 8; i++) {
         neighbors_coords[0][i] = int(burning_cell_0) + moves[i][0];
         neighbors_coords[1][i] = int(burning_cell_1) + moves[i][1];
@@ -104,6 +105,7 @@ Fire simulate_fire(
       // Note that in the case 0 - 1 we will have size_t_MAX
 
       // Loop over neighbors_coords of the focal burning cell
+      // TODO: Aca podemos ver de vectorizar para procesar 8 celdas en paralelo
       for (size_t n = 0; n < 8; n++) {
 
         int neighbour_cell_0 = neighbors_coords[0][n];
