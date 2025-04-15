@@ -33,4 +33,6 @@ struct Landscape {
   Cell& operator[](std::pair<size_t, size_t> index);
 
   Matrix<Cell> cells;
+
+  std::vector<Cell> to_flat_vector() const;
 };

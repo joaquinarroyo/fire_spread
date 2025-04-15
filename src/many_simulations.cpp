@@ -5,6 +5,10 @@
 #include <fstream>
 #define PERF_FILENAME "graphics/simdata/burned_probabilities_perf_data.txt"
 
+inline size_t INDEX(size_t x, size_t y, size_t width) {
+  return x + y * width;
+}
+
 Matrix<size_t> burned_amounts_per_cell(
     const Landscape& landscape, const std::vector<std::pair<size_t, size_t>>& ignition_cells,
     SimulationParams params, float distance, float elevation_mean, float elevation_sd,
@@ -15,10 +19,13 @@ Matrix<size_t> burned_amounts_per_cell(
   double min_metric = 1e15;
   double max_metric = 0;
   double total_time_taken = 0;
-
+  int n_row = landscape.height;
+  int n_col = landscape.width;
+  Fire fire = empty_fire(n_row, n_col);
+  std::vector<Cell> landscape_vec = landscape.to_flat_vector();
   for (size_t i = 0; i < n_replicates; i++) {
     Fire fire = simulate_fire(
-        landscape, ignition_cells, params, distance, elevation_mean, elevation_sd, upper_limit
+      landscape_vec, n_row, n_col, ignition_cells, params, distance, elevation_mean, elevation_sd, upper_limit
     );
     double metric = fire.processed_cells / (fire.time_taken * 1e6);
     min_metric = std::min(min_metric, metric);
@@ -26,7 +33,7 @@ Matrix<size_t> burned_amounts_per_cell(
     total_time_taken += fire.time_taken;
     for (size_t col = 0; col < landscape.width; col++) {
       for (size_t row = 0; row < landscape.height; row++) {
-        if (fire.burned_layer[{col, row}]) {
+        if (fire.burned_layer[INDEX(col, row, n_col)]) {
           burned_amounts[{col, row}] += 1;
         }
       }

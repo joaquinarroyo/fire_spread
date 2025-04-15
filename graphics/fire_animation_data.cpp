@@ -45,10 +45,13 @@ int main(int argc, char* argv[]) {
     double min_metric = 1e15;
     double max_metric = 0;
     double total_time_taken = 0;
-    Fire fire = empty_fire(landscape.width, landscape.height);
+    int n_row = landscape.height;
+    int n_col = landscape.width;
+    Fire fire = empty_fire(n_row, n_col);
+    std::vector<Cell> landscape_vec = landscape.to_flat_vector();
     for (size_t i = 0; i < N_REPLICATES; i++) {
       Fire fire = simulate_fire(
-          landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT
+        landscape_vec, n_row, n_col, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT
       );
       double time_taken = fire.time_taken;
       double metric = fire.processed_cells / (time_taken * 1e6);

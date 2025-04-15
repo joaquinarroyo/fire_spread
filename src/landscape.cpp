@@ -68,3 +68,14 @@ Cell Landscape::operator[](std::pair<size_t, size_t> index) const {
 Cell& Landscape::operator[](std::pair<size_t, size_t> index) {
   return cells[index];
 }
+
+std::vector<Cell> Landscape::to_flat_vector() const {
+  std::vector<Cell> flat;
+  flat.reserve(width * height);
+  for (size_t j = 0; j < height; ++j) {
+    for (size_t i = 0; i < width; ++i) {
+      flat.push_back(cells[{i, j}]);
+    }
+  }
+  return flat;
+}

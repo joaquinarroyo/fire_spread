@@ -2,6 +2,7 @@
 
 #include <cstddef>
 #include <vector>
+#include <cstdint>
 
 #include "landscape.hpp"
 #include "matrix.hpp"
@@ -9,10 +10,10 @@
 struct Fire {
   size_t width;
   size_t height;
-  int processed_cells; // number of cells processed in the simulation TODO: Revisar si usamos size_t o int
+  unsigned int processed_cells; // number of cells processed in the simulation TODO: Revisar si usamos size_t o int
   double time_taken; // time spent in the simulation
 
-  Matrix<bool> burned_layer;
+  std::vector<uint8_t> burned_layer;
 
   std::vector<std::pair<size_t, size_t>> burned_ids;
 

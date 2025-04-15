@@ -5,6 +5,10 @@
 #include "landscape.hpp"
 #include "matrix.hpp"
 
+inline size_t INDEX(size_t x, size_t y, size_t width) {
+  return x + y * width;
+}
+
 Fire read_fire(size_t width, size_t height, std::string filename) {
 
   std::ifstream burned_ids_file(filename);
@@ -16,7 +20,7 @@ Fire read_fire(size_t width, size_t height, std::string filename) {
   CSVIterator loop(burned_ids_file);
   loop++;
 
-  Matrix<bool> burned_layer(width, height);
+  std::vector<uint8_t> burned_layer(width * height, false);
 
   std::vector<std::pair<size_t, size_t>> burned_ids;
 
@@ -29,7 +33,7 @@ Fire read_fire(size_t width, size_t height, std::string filename) {
     if (x >= width || y >= height) {
       throw std::runtime_error("Invalid fire file");
     }
-    burned_layer[{ x, y }] = true;
+    burned_layer[INDEX(x, y, width)] = 1;
     burned_ids.push_back({ x, y });
   }
 
@@ -39,7 +43,7 @@ Fire read_fire(size_t width, size_t height, std::string filename) {
 }
 
 Fire empty_fire(size_t width, size_t height) {
-  return { width, height, 0, 0, Matrix<bool>(width, height), {}, {} };
+  return { width, height, 0, 0, std::vector<uint8_t>(width * height), {}, {} };
 }
 
 FireStats get_fire_stats(const Fire& fire, const Landscape& landscape) {
