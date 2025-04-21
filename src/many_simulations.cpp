@@ -3,11 +3,10 @@
 #include <iostream>
 #include <cmath>
 #include <fstream>
+#include "fires.hpp"
 #define PERF_FILENAME "graphics/simdata/burned_probabilities_perf_data.txt"
 
-inline size_t INDEX(size_t x, size_t y, size_t width) {
-  return x + y * width;
-}
+
 
 Matrix<size_t> burned_amounts_per_cell(
     const Landscape& landscape, const std::vector<std::pair<size_t, size_t>>& ignition_cells,
@@ -33,7 +32,7 @@ Matrix<size_t> burned_amounts_per_cell(
     total_time_taken += fire.time_taken;
     for (size_t col = 0; col < landscape.width; col++) {
       for (size_t row = 0; row < landscape.height; row++) {
-        if (fire.burned_layer[INDEX(col, row, n_col)]) {
+        if (fire.burned_layer[utils::INDEX(col, row, n_col)]) {
           burned_amounts[{col, row}] += 1;
         }
       }

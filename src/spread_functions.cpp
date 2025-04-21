@@ -7,15 +7,26 @@
 #include <omp.h>
 #include <iostream>
 #include <array>
+#include <random>
 
 #include "fires.hpp"
 #include "landscape.hpp"
 
-inline size_t INDEX(size_t x, size_t y, size_t width) {
-  return x + y * width;
-}
-
 constexpr float PIf = 3.1415927f;  // float PI
+std::mt19937 rng(123);
+std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+
+const Cell& get_default_cell() {
+  static Cell default_cell = {
+      0.0f,
+      0.0f,
+      0.0f,
+      0.0f,
+      false,
+      MATORRAL,
+  };
+  return default_cell;
+}
 
 std::array<float, 8> spread_probability(
     const Cell& burning, 
@@ -66,13 +77,15 @@ Fire simulate_fire( // missed: splitting region at control altering definition _
     float upper_limit = 1.0
 ) {
   const Cell* landscape_data = landscape.data();
-  std::vector<std::pair<size_t, size_t>> burned_ids;
+  std::vector<size_t> burned_ids_0;
+  std::vector<size_t> burned_ids_1;
 
   size_t start = 0;
   size_t end = ignition_cells.size();
 
   for (size_t i = 0; i < end; i++) {
-    burned_ids.push_back(ignition_cells[i]);
+    burned_ids_0.push_back(ignition_cells[i].first);
+    burned_ids_1.push_back(ignition_cells[i].second);
   }
 
   std::vector<size_t> burned_ids_steps;
@@ -80,13 +93,13 @@ Fire simulate_fire( // missed: splitting region at control altering definition _
 
   size_t burning_size = end + 1;
 
-  std::vector<uint8_t> burned_bin(n_col * n_row, 0);;
+  std::vector<int> burned_bin(n_col * n_row, 0);
   for (size_t i = 0; i < end; i++) {
       size_t x = ignition_cells[i].first;
       size_t y = ignition_cells[i].second;
-      burned_bin[INDEX(x, y, n_col)] = 1;
+      burned_bin[utils::INDEX(x, y, n_col)] = 1;
   }
-  uint8_t* burned_data = burned_bin.data();
+  int* burned_data = burned_bin.data();
 
   double start_time = omp_get_wtime();
   unsigned int processed_cells = 0;
@@ -102,64 +115,86 @@ Fire simulate_fire( // missed: splitting region at control altering definition _
     // b is going to keep the position in burned_ids that have to be evaluated
     // in this burn cycle
     for (size_t b = start; b < end; b++) {
-      size_t burning_cell_0 = burned_ids[b].first;
-      size_t burning_cell_1 = burned_ids[b].second;
+      // b is the index of the burning cell in the burned_ids vector
+      size_t burning_cell_0 = burned_ids_0[b];
+      size_t burning_cell_1 = burned_ids_1[b];
+      const Cell& burning_cell = landscape_data[utils::INDEX(burning_cell_0, burning_cell_1, n_col)];
 
-      const Cell& burning_cell = landscape_data[INDEX(burning_cell_0, burning_cell_1, n_col)];
-
+      // Calculate the neighbors coordinates
       int neighbors_coords_0[8];
       int neighbors_coords_1[8];
       for (size_t i = 0; i < 8; i++) {
         neighbors_coords_0[i] = int(burning_cell_0) + moves[i][0];
         neighbors_coords_1[i] = int(burning_cell_1) + moves[i][1];
       }
-      // Note that in the case 0 - 1 we will have size_t_MAX
       
-      // Loop over neighbors_coords of the focal burning cell
+      // SoA: Estructura de Arrays para los atributos de los vecinos
+      std::array<size_t, 8> indices;
+      std::array<int, 8> out_of_range_flags;
+
       std::array<float, 8> elevations;
-      std::array<float, 8> vegetation_types;
       std::array<float, 8> fwis;
       std::array<float, 8> aspects;
+      std::array<float, 8> vegetation_types;
+      std::array<float, 8> burnables;
+      
       std::array<float, 8> upper_limits;
-      // TODO: Ver aca
-      for (size_t n = 0; n < 8; n++) {
-        int neighbour_cell_0 = neighbors_coords_0[n];
-        int neighbour_cell_1 = neighbors_coords_1[n];
 
-        // Is the cell in range?
-        uint8_t out_of_range = 0 > neighbour_cell_0 || neighbour_cell_0 >= int(n_col) ||
-                               0 > neighbour_cell_1 || neighbour_cell_1 >= int(n_row);
-        
-        // TODO: Revisar que neighbour_cell_0 y neighbour_cell_1 no sean negativos
-        size_t idx = INDEX(neighbour_cell_0, neighbour_cell_1, n_col);
-        const Cell& neighbour_cell = landscape_data[idx];
-        uint8_t burnable_cell = !burned_data[INDEX(neighbour_cell_0, neighbour_cell_1, n_col)] && neighbour_cell.burnable;
-
-        uint8_t mask = (!out_of_range && burnable_cell) ? 1 : 0;
-        float limit = mask * upper_limit;
-        
-        elevations[n] = neighbour_cell.elevation;
-        vegetation_types[n] = neighbour_cell.vegetation_type;
-        fwis[n] = neighbour_cell.fwi;
-        aspects[n] = neighbour_cell.aspect;
-        upper_limits[n] = limit;
-
-        processed_cells += !out_of_range;
+      // 1. Get the neighbors data
+      std::array<const Cell*, 8> neighbors;
+      for (size_t n = 0; n < 8; ++n) {
+        int nc0 = neighbors_coords_0[n];
+        int nc1 = neighbors_coords_1[n];
+        size_t idx = utils::INDEX(nc0, nc1, n_col);
+        bool out_of_range = (nc0 < 0 || nc0 >= int(n_col) || nc1 < 0 || nc1 >= int(n_row));
+        if (out_of_range) {
+          neighbors[n] = &get_default_cell();
+          indices[n] = 0;
+          out_of_range_flags[n] = 1;
+        } else {
+          neighbors[n] = &landscape_data[idx];
+          indices[n] = idx;
+          out_of_range_flags[n] = 0;
+        }
       }
       
+      // loop totalmente separado para acceder por campo
+      for (size_t n = 0; n < 8; ++n) {
+        elevations[n] = neighbors[n]->elevation;
+        fwis[n] = neighbors[n]->fwi;
+        aspects[n] = neighbors[n]->aspect;
+        vegetation_types[n] = neighbors[n]->vegetation_type;
+        burnables[n] = neighbors[n]->burnable;
+      }
+
+      // 2. Check if neighbors are in range and burnable to calculate the upper limits
+      for (size_t n = 0; n < 8; ++n) {
+        size_t idx = indices[n];
+        int burnable = !burned_data[idx] && burnables[n];
+        int mask = (!out_of_range_flags[n] && burnable);
+        upper_limits[n] = mask * upper_limit;
+        processed_cells += !out_of_range_flags[n];
+      }
+      
+      // 3. Calculate the probabilities of burning
       std::array<float, 8> probs;
       probs = spread_probability(
         burning_cell, elevations, vegetation_types, fwis, aspects, params, angles, distance, elevation_mean, elevation_sd, upper_limits
       );
       
-      // TODO: Ver aca
-      for (size_t n = 0; n < 8; n++) {
-        // Burn with probability prob (Bernoulli)
-        bool burn = rand() < probs[n] * (RAND_MAX + 1.0);
-        if (burn) {
-          end_forward += 1;
-          burned_ids.push_back({ neighbors_coords_0[n], neighbors_coords_1[n] });
-          burned_data[INDEX(neighbors_coords_0[n], neighbors_coords_1[n], n_col)] = 1;
+      // 4. Calculate the burn flags based on the probabilities
+      std::array<uint8_t, 8> burn_flags;
+      for (size_t n = 0; n < 8; ++n) {
+        burn_flags[n] = dist(rng) < probs[n];
+      }
+      
+      // 5. Update the burned data and the burned ids if the cell is going to burn
+      for (size_t n = 0; n < 8; ++n) {
+        if (burn_flags[n]) {
+          burned_data[indices[n]] = 1;
+          burned_ids_0.push_back(neighbors_coords_0[n]);
+          burned_ids_1.push_back(neighbors_coords_1[n]);
+          end_forward++;
         }
       }
     }
@@ -172,5 +207,5 @@ Fire simulate_fire( // missed: splitting region at control altering definition _
   }
   double end_time = omp_get_wtime(); // missed: statement clobbers memory: start_time_64 = omp_get_wtime ();
   double time_taken = end_time - start_time;
-  return { n_col, n_row, processed_cells, time_taken, burned_bin, burned_ids, burned_ids_steps };
+  return { n_col, n_row, processed_cells, time_taken, burned_bin, burned_ids_0, burned_ids_1, burned_ids_steps };
 }

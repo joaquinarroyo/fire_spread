@@ -5,9 +5,6 @@
 #include "landscape.hpp"
 #include "matrix.hpp"
 
-inline size_t INDEX(size_t x, size_t y, size_t width) {
-  return x + y * width;
-}
 
 Fire read_fire(size_t width, size_t height, std::string filename) {
 
@@ -20,9 +17,9 @@ Fire read_fire(size_t width, size_t height, std::string filename) {
   CSVIterator loop(burned_ids_file);
   loop++;
 
-  std::vector<uint8_t> burned_layer(width * height, false);
-
-  std::vector<std::pair<size_t, size_t>> burned_ids;
+  std::vector<int> burned_layer(width * height, false);
+  std::vector<size_t> burned_ids_0;
+  std::vector<size_t> burned_ids_1;
 
   for (; loop != CSVIterator(); ++loop) {
     if (loop->size() < 2) {
@@ -33,24 +30,27 @@ Fire read_fire(size_t width, size_t height, std::string filename) {
     if (x >= width || y >= height) {
       throw std::runtime_error("Invalid fire file");
     }
-    burned_layer[INDEX(x, y, width)] = 1;
-    burned_ids.push_back({ x, y });
+    burned_layer[utils::INDEX(x, y, width)] = 1;
+    burned_ids_0.push_back(x);
+    burned_ids_1.push_back(y);
   }
 
   burned_ids_file.close();
 
-  return { width, height, 0, 0, burned_layer, burned_ids, {} };
+  return { width, height, 0, 0, burned_layer, burned_ids_0, burned_ids_1, {} };
 }
 
 Fire empty_fire(size_t width, size_t height) {
-  return { width, height, 0, 0, std::vector<uint8_t>(width * height), {}, {} };
+  return { width, height, 0, 0, std::vector<int>(width * height), {}, {}, {} };
 }
 
 FireStats get_fire_stats(const Fire& fire, const Landscape& landscape) {
 
   FireStats stats = { 0, 0, 0, 0 };
-
-  for (auto [x, y] : fire.burned_ids) {
+  size_t n = fire.burned_ids_0.size();
+  for (size_t i = 0; i < n; i++) {
+    size_t x = fire.burned_ids_0[i];
+    size_t y = fire.burned_ids_1[i];
     Cell cell = landscape[{ x, y }];
 
     if (cell.vegetation_type == SUBALPINE) {

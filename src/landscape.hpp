@@ -16,10 +16,10 @@ static_assert( sizeof(VegetationType) == 1 );
 struct Cell {
   float elevation;
   float wind_direction;
-  bool burnable;
-  VegetationType vegetation_type;
   float fwi;
   float aspect;
+  bool burnable;
+  VegetationType vegetation_type;
 };
 
 struct Landscape {

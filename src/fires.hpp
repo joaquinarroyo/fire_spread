@@ -12,17 +12,18 @@ struct Fire {
   size_t height;
   unsigned int processed_cells; // number of cells processed in the simulation TODO: Revisar si usamos size_t o int
   double time_taken; // time spent in the simulation
-
-  std::vector<uint8_t> burned_layer;
-
-  std::vector<std::pair<size_t, size_t>> burned_ids;
-
+  std::vector<int> burned_layer;
+  std::vector<size_t> burned_ids_0;
+  std::vector<size_t> burned_ids_1;
   // Positions in burned_ids where a new step starts, empty if the fire was not simulated
   std::vector<size_t> burned_ids_steps;
-
   bool operator==(const Fire& other) const {
-    return width == other.width && height == other.height &&
-           burned_layer == other.burned_layer && burned_ids == other.burned_ids;
+    return 
+      width == other.width && 
+      height == other.height &&
+      burned_layer == other.burned_layer && 
+      burned_ids_0 == other.burned_ids_0 &&
+      burned_ids_1 == other.burned_ids_1;
   }
 };
 
@@ -40,3 +41,9 @@ struct FireStats {
 };
 
 FireStats get_fire_stats(const Fire& fire, const Landscape& landscape);
+
+namespace utils {
+  inline size_t INDEX(size_t x, size_t y, size_t width) {
+    return x + y * width;
+  }
+}

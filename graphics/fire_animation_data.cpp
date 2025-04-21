@@ -82,7 +82,7 @@ int main(int argc, char* argv[]) {
       }
       outputFile << "Step " << step << ":" << std::endl;
       for (; i < j; i++) {
-        outputFile << fire.burned_ids[i].first << " " << fire.burned_ids[i].second << std::endl;
+        outputFile << fire.burned_ids_0[i] << " " << fire.burned_ids_1[i] << std::endl;
       }
       step++;
     }
