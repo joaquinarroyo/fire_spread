@@ -1,7 +1,9 @@
 #!/bin/bash
 
 # Lista de data a procesar
-data=("2005_6" "1999_28" "1999_27j_N" "1999_27j_S" "2021_865" "2015_50")
+data=(
+  "2005_26" "2000_8" "2005_6" "1999_27j_S" "2021_865" "2015_50"
+)
 
 if [ -z "$1" ]; then
   echo "Por favor, ingresa 'burned_probabilities' o 'fire_animation' como argumento"
@@ -20,7 +22,7 @@ if [ "$1" == "fire_animation" ]; then
 fi
 
 # Cantidad de repeticiones
-reps=1
+reps=5
 
 for rep in $(seq 1 $reps); do
   echo "Repetición $rep"
