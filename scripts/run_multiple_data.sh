@@ -20,7 +20,7 @@ if [ "$1" == "fire_animation" ]; then
 fi
 
 # Cantidad de repeticiones
-reps=1
+reps=5
 
 for rep in $(seq 1 $reps); do
   echo "Repetición $rep"
