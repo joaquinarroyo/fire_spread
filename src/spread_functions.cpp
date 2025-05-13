@@ -71,7 +71,7 @@ std::array<float, 8> spread_probability(
   return probs;
 }
 
-Fire simulate_fire( // missed: splitting region at control altering definition _268 = operator new (prephitmp_483); missed: not vectorized: statement can throw an exception: resx 41
+Fire simulate_fire(
     const std::vector<Cell> landscape, size_t n_row, size_t n_col, const std::vector<std::pair<size_t, size_t>>& ignition_cells,
     SimulationParams params, float distance, float elevation_mean, float elevation_sd,
     float upper_limit = 1.0
