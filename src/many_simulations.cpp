@@ -7,7 +7,6 @@
 #define PERF_FILENAME "graphics/simdata/burned_probabilities_perf_data.txt"
 
 
-
 Matrix<size_t> burned_amounts_per_cell(
     const Landscape& landscape, const std::vector<std::pair<size_t, size_t>>& ignition_cells,
     SimulationParams params, float distance, float elevation_mean, float elevation_sd,
@@ -22,6 +21,7 @@ Matrix<size_t> burned_amounts_per_cell(
   int n_col = landscape.width;
   Fire fire = empty_fire(n_row, n_col);
   std::vector<Cell> landscape_vec = landscape.to_flat_vector();
+  // TODO: Quizas paralelizar aqui?
   for (size_t i = 0; i < n_replicates; i++) {
     Fire fire = simulate_fire(
       landscape_vec, n_row, n_col, ignition_cells, params, distance, elevation_mean, elevation_sd, upper_limit
