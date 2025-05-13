@@ -10,4 +10,4 @@ if [[ "$1" != "burned_probabilities" && "$1" != "fire_animation" ]]; then
   exit 1
 fi
 
-python3 ./graphics/generate_plots.py $1
+python3 ./graphics/generate_plots.py $1 "${@:2}"

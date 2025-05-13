@@ -1,84 +1,170 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import sys
 
-FILENAME = "./graphics/simdata/{}_perf_data.txt"
+FILENAME = "./graphics/simdata/{}_perf_data_{}.txt"
 DIR = "./plots/"
 
-def read_perf_data(name):
+DATA_NAMES = {
+    2548: '2005_26',
+    8008: '2000_8',
+    13125: '2011_19W',
+    14161: '2005_6',
+    15912: '2009_3',
+    48614: '2011_19E',
+    94188: '1999_28',
+    143655: '1999_27j_N',
+    1483274: '1999_27j_S',
+    4696595: '2021_865',
+    10434109: '2015_50'
+}
+
+def read_perf_data(name, versions):
     """
     Reads the performance data from the file
 
     Example input:
-    m*n, min_metric, max_metric, time
+    m*n, max_metric, time
 
     Example output:
     {
-        m*n: (min_metric, max_metric, time)
+        m*n: (max_metric, time)
     }
     """
     data = {}
-    with open(FILENAME.format(name), "r") as file:
-        lines = file.readlines()
-        for line in lines:
-            cells, min_metric, max_metric, time = line.split(",")
-            if cells in data.keys():
-                data[int(cells)].append((float(min_metric), float(max_metric), float(time)))
+    for version in versions:
+        inner_data = {}
+        with open(FILENAME.format(name, version), "r") as file:
+            lines = file.readlines()
+            for line in lines:
+                cells, max_metric, time = line.split(",")
+                if cells in inner_data.keys():
+                    inner_data[int(cells)].append((float(max_metric), float(time)))
+                else:
+                    inner_data[int(cells)] = [(float(max_metric), float(time))]
+        for key, value in inner_data.items():
+            max_metric = sum([x[0] for x in value]) / len(value)
+            time = sum([x[1] for x in value]) / len(value)
+            if key in data.keys():
+                data[key].append((max_metric, time))
             else:
-                data[int(cells)] = [(float(min_metric), float(max_metric), float(time))]
-    
-    for key, value in data.items():
-        min_metric = sum([x[0] for x in value]) / len(value)
-        max_metric = sum([x[1] for x in value]) / len(value)
-        time = sum([x[2] for x in value]) / len(value)
-        data[key] = (min_metric, max_metric, time)
+                data[key] = [(max_metric, time)]
     return data
 
-def generate_plots(data, name):
+def generate_barplots(data, name):
     """
-    Generates the plot for the performance data and saves it
+    Generates bar plots for multiple metrics and times per dataset.
 
-    data structure:
-    {
-        m*n: (min_metric, max_metric, time)
-    }
+    Parameters:
+    - data: dict with structure {id: [(value_i, time_i), ...]}
+    - name: base name for the output files
+
+    Saves:
+    - {name}_metric_bar.png
+    - {name}_times_bar.png
     """
     if not data:
         print("No data to plot")
         return
-    data = [(key, value[0], value[1], value[2]) for key, value in data.items()]
-    data = sorted(data, key=lambda x: x[0])
-    # Delete duplicate key: x[0] data
-    data = list(dict.fromkeys(data))
-    cells = [x[0] for x in data]
-    min_metric = [x[1] for x in data]
-    max_metric = [x[2] for x in data]
-    time = [x[3] for x in data]
-    # First plot, metric performance
-    plt.xscale("log")    
-    plt.plot(cells, min_metric, label="Min processed cells/nanosecond")
-    plt.plot(cells, max_metric, label="Max processed cells/nanosecond")
-    plt.plot(cells, min_metric, "o", color="blue")
-    plt.plot(cells, max_metric, "o", color="orange")
-    plt.xlabel("Number of cells")
-    plt.ylabel("Metric processed cells/nanosecond")
-    plt.title(f"{name}: metric performance x size")
-    plt.legend()
-    plot_name = DIR + name + "_perf.png"
-    plt.savefig(plot_name)
-    print("Plot saved as: " + plot_name)
-    # Second plot, time performance
-    plt.clf()
-    plt.xscale("log")
-    plt.xlabel("Number of cells")
-    plt.ylabel("Time (seconds)")
-    plt.title(f"{name}: time performance x size")
-    plt.plot(cells, time, label="Time (seconds)")
-    plt.plot(cells, time, "o", color="blue")
-    plt.legend()
-    plot_name = DIR + name + "_time.png"
-    plt.savefig(plot_name)
-    print("Plot saved as: " + plot_name)
 
+    ids = list(data.keys())
+    num_variants = len(next(iter(data.values())))
+
+    x_labels = [DATA_NAMES.get(i, str(i)) for i in ids]
+    x = np.arange(len(ids))
+    width = 0.8 / num_variants  # Ajusta ancho según cantidad de variantes
+
+    # --- Plot de métricas ---
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for idx in range(num_variants):
+        values = [data[i][idx][0] for i in ids]
+        offset = (idx - (num_variants - 1) / 2) * width
+        ax.bar(x + offset, values, width, label=f'Value {idx + 1}')
+    ax.set_xlabel('Datasets')
+    ax.set_ylabel('Valor')
+    ax.set_title('Comparación Métrica')
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels, rotation=45)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(f"{DIR}{name}_metric_bar.png")
+    print(f"Saved plot to {DIR}{name}_metric_bar.png")
+    plt.close()
+
+    # --- Plot de tiempos ---
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for idx in range(num_variants):
+        times = [data[i][idx][1] for i in ids]
+        offset = (idx - (num_variants - 1) / 2) * width
+        ax.bar(x + offset, times, width, label=f'Tiempo {idx + 1}')
+    ax.set_yscale('log')
+    ax.set_xlabel('Datasets')
+    ax.set_ylabel('Tiempo (s)')
+    ax.set_title('Comparación Tiempos')
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels, rotation=45)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(f"{DIR}{name}_times_bar.png")
+    print(f"Saved plot to {DIR}{name}_times_bar.png")
+    plt.close()
+
+
+def generate_line_plots(data, name):
+    """
+    Generates line plots for multiple metrics and times per dataset.
+
+    Parameters:
+    - data: dict with structure {id: [(value_i, time_i), ...]}
+    - name: base name for the output files
+
+    Saves:
+    - {name}_values_line.png
+    - {name}_times_line.png
+    """
+    if not data:
+        print("No data to plot")
+        return
+
+    ids = list(data.keys())
+    num_variants = len(next(iter(data.values())))
+
+    x_labels = [DATA_NAMES.get(i, str(i)) for i in ids]
+    x = np.arange(len(ids))
+
+    # --- Plot de métricas ---
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for idx in range(num_variants):
+        values = [data[i][idx][0] for i in ids]
+        ax.plot(x, values, marker='o', label=f'Value {idx + 1}')
+    ax.set_yscale('log')
+    ax.set_xlabel('Datasets')
+    ax.set_ylabel('Valor (escala logarítmica)')
+    ax.set_title('Comparación Métricas (Línea)')
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels, rotation=45)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(f"{DIR}{name}_metric_line.png")
+    print(f"Saved plot to {DIR}{name}_metric_line.png")
+    plt.close()
+
+    # --- Plot de tiempos ---
+    fig, ax = plt.subplots(figsize=(10, 6))
+    for idx in range(num_variants):
+        times = [data[i][idx][1] for i in ids]
+        ax.plot(x, times, marker='o', label=f'Tiempo {idx + 1}')
+    ax.set_yscale('log')
+    ax.set_xlabel('Datasets')
+    ax.set_ylabel('Tiempo (s)')
+    ax.set_title('Comparación Tiempos (Línea)')
+    ax.set_xticks(x)
+    ax.set_xticklabels(x_labels, rotation=45)
+    ax.legend()
+    plt.tight_layout()
+    plt.savefig(f"{DIR}{name}_times_line.png")
+    print(f"Saved plot to {DIR}{name}_times_line.png")
+    plt.close()
 
 def main():
     if len(sys.argv) < 2:
@@ -88,8 +174,13 @@ def main():
     if name not in ["burned_probabilities", "fire_animation"]:
         print("Usage: python3 generate_plots.py burned_probabilities|fire_animation")
         return
-    data = read_perf_data(name)
-    generate_plots(data, name)
+    versions = sys.argv[2:]
+    if not versions:
+        print("Usage: python3 generate_plots.py burned_probabilities|fire_animation v1 v2 ...")
+        return
+    data = read_perf_data(name, versions)
+    generate_barplots(data, name)
+    generate_line_plots(data, name)
 
 if __name__ == "__main__":
     main() 
