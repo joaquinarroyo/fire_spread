@@ -79,7 +79,7 @@ def generate_barplots(data, name):
     for idx in range(num_variants):
         values = [data[i][idx][0] for i in ids]
         offset = (idx - (num_variants - 1) / 2) * width
-        ax.bar(x + offset, values, width, label=f'Value {idx + 1}')
+        ax.bar(x + offset, values, width, label=f'Métrica {idx + 1}')
     ax.set_xlabel('Datasets')
     ax.set_ylabel('Valor')
     ax.set_title('Comparación Métrica')
@@ -87,8 +87,8 @@ def generate_barplots(data, name):
     ax.set_xticklabels(x_labels, rotation=45)
     ax.legend()
     plt.tight_layout()
-    plt.savefig(f"{DIR}{name}_metric_bar.png")
-    print(f"Saved plot to {DIR}{name}_metric_bar.png")
+    plt.savefig(f"{DIR}{name}_perf_bar.png")
+    print(f"Saved plot to {DIR}{name}_perf_bar.png")
     plt.close()
 
     # --- Plot de tiempos ---
@@ -136,17 +136,17 @@ def generate_line_plots(data, name):
     fig, ax = plt.subplots(figsize=(10, 6))
     for idx in range(num_variants):
         values = [data[i][idx][0] for i in ids]
-        ax.plot(x, values, marker='o', label=f'Value {idx + 1}')
+        ax.plot(x, values, marker='o', label=f'Métrica {idx + 1}')
     ax.set_yscale('log')
     ax.set_xlabel('Datasets')
-    ax.set_ylabel('Valor (escala logarítmica)')
-    ax.set_title('Comparación Métricas (Línea)')
+    ax.set_ylabel('Valor')
+    ax.set_title('Comparación Métricas')
     ax.set_xticks(x)
     ax.set_xticklabels(x_labels, rotation=45)
     ax.legend()
     plt.tight_layout()
-    plt.savefig(f"{DIR}{name}_metric_line.png")
-    print(f"Saved plot to {DIR}{name}_metric_line.png")
+    plt.savefig(f"{DIR}{name}_perf_line.png")
+    print(f"Saved plot to {DIR}{name}_perf_line.png")
     plt.close()
 
     # --- Plot de tiempos ---
@@ -157,7 +157,7 @@ def generate_line_plots(data, name):
     ax.set_yscale('log')
     ax.set_xlabel('Datasets')
     ax.set_ylabel('Tiempo (s)')
-    ax.set_title('Comparación Tiempos (Línea)')
+    ax.set_title('Comparación Tiempos')
     ax.set_xticks(x)
     ax.set_xticklabels(x_labels, rotation=45)
     ax.legend()
