@@ -7,3 +7,11 @@ __Laboratorio__: fire_spread
 ## Notas
 
 Realizamos la optimización sobre la simuluación __burned_probabilities__.
+
+## Estrategias
+
+### 1
+
+### 2
+
+### 3

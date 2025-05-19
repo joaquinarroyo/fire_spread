@@ -12,5 +12,5 @@
 Matrix<size_t> burned_amounts_per_cell(
     const Landscape& landscape, const std::vector<std::pair<size_t, size_t>>& ignition_cells,
     SimulationParams params, float distance, float elevation_mean, float elevation_sd,
-    float upper_limit, size_t n_replicates
+    float upper_limit, size_t n_replicates, std::string output_filename_suffix
 );
