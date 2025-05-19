@@ -1,17 +1,13 @@
 #!/bin/bash
 
 # Lista de data a procesar
-data=(
-  "2005_26" "2000_8" "2005_6" "1999_27j_S" "2021_865" "2015_50"
+data="1999_27j_S"
+threads=(
+  "2" "4" "6" "8" "10" "12"
 )
 
 if [ -z "$1" ]; then
   echo "Por favor, ingresa 'burned_probabilities' o 'fire_animation' como argumento"
-  exit 1
-fi
-
-if [ -z "$2" ]; then
-  echo "Por favor, ingresa el sufijo de salida como argumento"
   exit 1
 fi
 
@@ -27,17 +23,16 @@ if [ "$1" == "fire_animation" ]; then
 fi
 
 # Cantidad de repeticiones
-reps=5
-
+reps=10
 for rep in $(seq 1 $reps); do
   echo "Repetición $rep"
   i=0
-  for name in "${data[@]}"; do
-    export OMP_NUM_THREADS=10
+  for thread in "${threads[@]}"; do
+    export OMP_NUM_THREADS=$thread
     export OMP_PROC_BIND=spread
     export OMP_PLACES=threads
-    echo "$i. Ejecutando $program sobre $name (Repetición $rep)"
-    ./graphics/$program ./data/$name 2>&1 $2 | tee ./stats/rep${rep}_${i}_${name}.txt
+    echo "$i. Ejecutando $program sobre $data threads: $OMP_NUM_THREADS (Repetición $rep)"
+    ./graphics/$program ./data/$data 2>&1 $2 | tee ./stats/rep${rep}_${i}_${data}.txt
     i=$((i+1))
   done
 done

@@ -20,13 +20,14 @@ int main(int argc, char* argv[]) {
   try {
 
     // check if the number of arguments is correct
-    if (argc != 2) {
-      std::cerr << "Usage: " << argv[0] << " <landscape_file_prefix>" << std::endl;
+    if (argc != 3) {
+      std::cerr << "Usage: " << argv[0] << " <landscape_file_prefix> <output_filename_suffix>" << std::endl;
       return EXIT_FAILURE;
     }
 
     // read the landscape file prefix
     std::string landscape_file_prefix = argv[1];
+    std::string output_filename_suffix = argv[2];
 
     // read the landscape
     Landscape landscape(landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv");
@@ -40,7 +41,7 @@ int main(int argc, char* argv[]) {
     };
 
     Matrix<size_t> burned_amounts = burned_amounts_per_cell(
-        landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT, N_REPLICATES
+        landscape, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, UPPER_LIMIT, N_REPLICATES, output_filename_suffix
     );
     // Abrir el archivo de salida y crear la cadena con información
     std::ofstream outputFile(FILENAME);

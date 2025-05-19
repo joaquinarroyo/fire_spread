@@ -7,15 +7,22 @@
 #include <algorithm>
 #include <numeric>
 #include "fires.hpp"
-#define PERF_FILENAME "graphics/simdata/burned_probabilities_perf_data_v3.txt"
+#define PERF_FILENAME "graphics/simdata/burned_probabilities_perf_data_"
 
 
 
 Matrix<size_t> burned_amounts_per_cell(
     const Landscape& landscape, const std::vector<std::pair<size_t, size_t>>& ignition_cells,
     SimulationParams params, float distance, float elevation_mean, float elevation_sd,
-    float upper_limit, size_t n_replicates
+    float upper_limit, size_t n_replicates, std::string output_filename_suffix
 ) {
+  const char* env_threads = std::getenv("OMP_NUM_THREADS");
+  if (env_threads) {
+    std::cout << "OMP_NUM_THREADS desde el entorno: " << env_threads << std::endl;
+  } else {
+    std::cout << "OMP_NUM_THREADS no está configurado en el entorno." << std::endl;
+  }
+  std::cout << "Número de hilos detectados por OpenMP: " << omp_get_max_threads() << std::endl;
   size_t n_col = landscape.width;
   size_t n_row = landscape.height;
 
@@ -25,14 +32,13 @@ Matrix<size_t> burned_amounts_per_cell(
 
   float max_metric = 0.0f;
   std::vector<float> thread_total_times(omp_get_max_threads(), 0.0f);
-
   #pragma omp parallel
   { 
       Matrix<size_t> local_burned_amounts(n_col, n_row);
       float local_max_metric = 0.0f;
       float local_total_time_taken = 0.0f;
 
-      #pragma omp for schedule(static, 8)
+      #pragma omp for schedule(dynamic, 10)
       for (size_t i = 0; i < n_replicates; i++) {
           Fire fire = simulate_fire(
               landscape_vec, n_row, n_col, ignition_cells, params,
@@ -77,8 +83,8 @@ Matrix<size_t> burned_amounts_per_cell(
   );
   
   // Guardamos data de la performance para graficar
-  std::ofstream outputFile(PERF_FILENAME, std::ios::app);
-  outputFile << n_col * n_row << ", " << max_metric << ", " << estimated_parallel_time << std::endl;
+  std::ofstream outputFile(PERF_FILENAME + output_filename_suffix + ".txt", std::ios::app);
+  outputFile << omp_get_max_threads() << ", " << n_col * n_row << ", " << max_metric << ", " << estimated_parallel_time << std::endl;
   outputFile.close();
 
   std::cout << "  SIMULATION PERFORMANCE DATA" << std::endl;

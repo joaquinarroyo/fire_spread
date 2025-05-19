@@ -51,6 +51,33 @@ def read_perf_data(name, versions):
                 data[key] = [(max_metric, time)]
     return data
 
+def read_perf_data_by_thread(name):
+    """
+    Reads the performance data from the file
+
+    Example input:
+    thread_n, m*n, max_metric, time
+    
+    Example output:
+    {
+        thread_n: (max_metric, time)
+    }
+    """
+    data = {}
+    with open(FILENAME.format(name, "threads"), "r") as file:
+        lines = file.readlines()
+        for line in lines:
+            thread_id, _, max_metric, time = line.split(",")
+            if thread_id not in data.keys():
+                data[thread_id] = [(float(max_metric), float(time))]
+            else:
+                data[thread_id].append((float(max_metric), float(time)))
+    for thread_id, l in data.items():
+        max_metric = sum([x[0] for x in l]) / len(l)
+        time = sum([x[1] for x in l]) / len(l)
+        data[thread_id] = (max_metric, time)
+    return data
+
 def generate_barplots(data, name):
     """
     Generates bar plots for multiple metrics and times per dataset.
@@ -136,61 +163,82 @@ def generate_barplots(data, name):
     print(f"Saved plot to {DIR}{name}_times_bar.png")
     plt.close()
 
-
-def generate_line_plots(data, name):
+def generate_barplots_by_threads(data, name):
     """
-    Generates line plots for multiple metrics and times per dataset.
+    Generates bar plots for metrics and times based on the number of threads.
 
     Parameters:
-    - data: dict with structure {id: [(value_i, time_i), ...]}
+    - data: dict with structure {'thread_n': [(metric, time)]}
     - name: base name for the output files
 
     Saves:
-    - {name}_values_line.png
-    - {name}_times_line.png
+    - {name}_metric_threads_bar.png
+    - {name}_time_threads_bar.png
     """
     if not data:
         print("No data to plot")
         return
 
-    ids = list(data.keys())
-    num_variants = len(next(iter(data.values())))
+    # Extract thread IDs, metrics, and times
+    sorted_data = sorted(data.items(), key=lambda x: int(x[0]))
+    thread_ids = [int(thread_id) for thread_id, _ in sorted_data]
+    metrics = [values[0] for _, values in sorted_data]
+    times = [values[1] for _, values in sorted_data]
 
-    x_labels = [DATA_NAMES.get(i, str(i)) for i in ids]
-    x = np.arange(len(ids))
+    x = np.arange(len(thread_ids))  # Positions for bars
+    width = 0.4  # Width of the bars
 
-    # --- Plot de métricas ---
-    fig, ax = plt.subplots(figsize=(10, 6))
-    for idx in range(num_variants):
-        values = [data[i][idx][0] for i in ids]
-        ax.plot(x, values, marker='o', label=f'Métrica {idx + 1}')
-    ax.set_yscale('log')
-    ax.set_xlabel('Datasets')
-    ax.set_ylabel('Valor')
-    ax.set_title('Comparación Métricas')
+    # --- Plot for metrics ---
+    fig, ax = plt.subplots(figsize=(8, 5))
+    bars = ax.bar(x, metrics, width, label='Métrica')
+    ax.set_xlabel('Número de Threads')
+    ax.set_ylabel('Métrica')
+    ax.set_title('Métrica x Número de Threads')
     ax.set_xticks(x)
-    ax.set_xticklabels(x_labels, rotation=45)
+    ax.set_xticklabels(thread_ids)
     ax.legend()
+
+    # Add value labels on top of bars
+    for bar, value in zip(bars, metrics):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height(),
+            f'{value:.2f}',
+            ha='center',
+            va='bottom',
+            fontsize=8
+        )
+
     plt.tight_layout()
-    plt.savefig(f"{DIR}{name}_perf_line.png")
-    print(f"Saved plot to {DIR}{name}_perf_line.png")
+    plt.savefig(f"{DIR}{name}_metric_threads_bar.png")
+    print(f"Saved plot to {DIR}{name}_metric_threads_bar.png")
     plt.close()
 
-    # --- Plot de tiempos ---
-    fig, ax = plt.subplots(figsize=(10, 6))
-    for idx in range(num_variants):
-        times = [data[i][idx][1] for i in ids]
-        ax.plot(x, times, marker='o', label=f'Tiempo {idx + 1}')
-    ax.set_yscale('log')
-    ax.set_xlabel('Datasets')
+    # --- Plot for times ---
+    fig, ax = plt.subplots(figsize=(8, 5))
+    bars = ax.bar(x, times, width, label='Tiempo')
+    ax.set_xlabel('Número de Threads')
     ax.set_ylabel('Tiempo (s)')
-    ax.set_title('Comparación Tiempos')
+    ax.set_title('Tiempo x Número de Threads')
     ax.set_xticks(x)
-    ax.set_xticklabels(x_labels, rotation=45)
+    ax.set_xticklabels(thread_ids)
     ax.legend()
+
+    # Add value labels on top of bars
+    for bar, value in zip(bars, times):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            bar.get_height(),
+            f'{value:.2f}',
+            ha='center',
+            va='bottom',
+            fontsize=8
+        )
+
+    plt.plot(color="orange")
     plt.tight_layout()
-    plt.savefig(f"{DIR}{name}_times_line.png")
-    print(f"Saved plot to {DIR}{name}_times_line.png")
+    plt.savefig(f"{DIR}{name}_time_threads_bar.png")
+    print(f"Saved plot to {DIR}{name}_time_threads_bar.png")
     plt.close()
 
 def main():
@@ -205,9 +253,13 @@ def main():
     if not versions:
         print("Usage: python3 generate_plots.py burned_probabilities|fire_animation v1 v2 ...")
         return
-    data = read_perf_data(name, versions)
-    generate_barplots(data, name)
-    generate_line_plots(data, name)
+    if "threads" in versions:
+        data = read_perf_data_by_thread(name)
+        generate_barplots_by_threads(data, name)
+        return
+    else:
+        data = read_perf_data(name, versions)
+        generate_barplots(data, name)
 
 if __name__ == "__main__":
     main()
