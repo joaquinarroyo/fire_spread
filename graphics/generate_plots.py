@@ -37,14 +37,14 @@ def read_perf_data(name, versions):
         with open(FILENAME.format(name, version), "r") as file:
             lines = file.readlines()
             for line in lines:
-                cells, max_metric, time = line.split(",")
-                if cells in inner_data.keys():
+                _, cells, max_metric, time = line.split(",")
+                if int(cells) in inner_data.keys():
                     inner_data[int(cells)].append((float(max_metric), float(time)))
                 else:
                     inner_data[int(cells)] = [(float(max_metric), float(time))]
         for key, value in inner_data.items():
-            max_metric = sum([x[0] for x in value]) / len(value)
-            time = sum([x[1] for x in value]) / len(value)
+            max_metric = max([x[0] for x in value])
+            time = min([x[1] for x in value])
             if key in data.keys():
                 data[key].append((max_metric, time))
             else:
@@ -68,13 +68,13 @@ def read_perf_data_by_thread(name):
         lines = file.readlines()
         for line in lines:
             thread_id, _, max_metric, time = line.split(",")
-            if thread_id not in data.keys():
-                data[thread_id] = [(float(max_metric), float(time))]
+            if int(thread_id) not in data.keys():
+                data[int(thread_id)] = [(float(max_metric), float(time))]
             else:
-                data[thread_id].append((float(max_metric), float(time)))
+                data[int(thread_id)].append((float(max_metric), float(time)))
     for thread_id, l in data.items():
-        max_metric = sum([x[0] for x in l]) / len(l)
-        time = sum([x[1] for x in l]) / len(l)
+        max_metric = max([x[0] for x in l])
+        time = min([x[1] for x in l])
         data[thread_id] = (max_metric, time)
     return data
 
@@ -119,8 +119,8 @@ def generate_barplots(data, name):
                 rotation=0
             )
     ax.set_xlabel('Datasets')
-    ax.set_ylabel('Valor')
-    ax.set_title('Comparación Métrica')
+    ax.set_ylabel('celdas x ns')
+    ax.set_title('Comparación Métrica (celdas x ns)')
     ax.set_xticks(x)
     ax.set_xticklabels(x_labels, rotation=45)
     ax.legend()

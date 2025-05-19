@@ -32,7 +32,7 @@ for rep in $(seq 1 $reps); do
     export OMP_PROC_BIND=spread
     export OMP_PLACES=threads
     echo "$i. Ejecutando $program sobre $data threads: $OMP_NUM_THREADS (Repetición $rep)"
-    ./graphics/$program ./data/$data 2>&1 $2 | tee ./stats/rep${rep}_${i}_${data}.txt
+    ./graphics/$program ./data/$data 2>&1 threads | tee ./stats/rep${rep}_${i}_${data}.txt
     i=$((i+1))
   done
 done

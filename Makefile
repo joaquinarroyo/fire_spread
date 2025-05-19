@@ -1,6 +1,6 @@
 # Compilador por defecto
 CXX ?= g++
-CXXFLAGS = -Wall -Wextra -Werror -fopenmp
+CXXFLAGS = -Wall -Wextra -Werror -fopenmp -g -I$(HOME)/intel/oneapi/advisor/latest/include
 INCLUDE = -I./src
 
 # Optimizaciones seguras por defecto

@@ -66,10 +66,10 @@ Estos resultados fueron obtenidos sobre __Atom__.
 
 ### Gráficos
 
-![](../final_plots/burned_probabilities_perf_1.png)
+![](../final_plots/v1/burned_probabilities_perf.png)
 
 
-![](../final_plots/burned_probabilities_time_1.png)
+![](../final_plots/v1/burned_probabilities_time.png)
 
 ### Comparación
 

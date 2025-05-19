@@ -13,8 +13,8 @@
 #include "landscape.hpp"
 
 constexpr float PIf = 3.1415927f;  // float PI
-std::mt19937 rng(123);
-std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+// std::mt19937 rng(123);
+// std::uniform_real_distribution<float> dist(0.0f, 1.0f);
 
 const Cell& get_default_cell() {
   static Cell default_cell = {
@@ -28,7 +28,7 @@ const Cell& get_default_cell() {
   return default_cell;
 }
 
-std::array<float, 8> spread_probability(
+inline std::array<float, 8> spread_probability(
     const Cell& burning, 
     const std::array<float, 8> elevations,
     const std::array<float, 8> vegetation_types,
@@ -74,8 +74,10 @@ std::array<float, 8> spread_probability(
 Fire simulate_fire(
     const std::vector<Cell> landscape, size_t n_row, size_t n_col, const std::vector<std::pair<size_t, size_t>>& ignition_cells,
     SimulationParams params, float distance, float elevation_mean, float elevation_sd,
-    float upper_limit = 1.0
+    int n_replicate, float upper_limit = 1.0
 ) {
+  std::mt19937 rng_local(123 + n_replicate);
+  std::uniform_real_distribution<float> dist(0.0f, 1.0f);
   const Cell* landscape_data = landscape.data();
   std::vector<size_t> burned_ids_0;
   std::vector<size_t> burned_ids_1;
@@ -185,7 +187,7 @@ Fire simulate_fire(
       // 4. Calculate the burn flags based on the probabilities
       std::array<uint8_t, 8> burn_flags;
       for (size_t n = 0; n < 8; ++n) {
-        burn_flags[n] = dist(rng) < probs[n];
+        burn_flags[n] = dist(rng_local) < probs[n];
       }
       
       // 5. Update the burned data and the burned ids if the cell is going to burn

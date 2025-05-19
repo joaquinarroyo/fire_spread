@@ -21,5 +21,5 @@ struct SimulationParams {
 // TODO: Ver de pasar landscape como const std::vector<Cell>&
 Fire simulate_fire(
   const std::vector<Cell> landscape, size_t n_row, size_t n_col, const std::vector<std::pair<size_t, size_t>>& ignition_cells,
-  SimulationParams params, float distance, float elevation_mean, float elevation_sd, float upper_limit
+  SimulationParams params, float distance, float elevation_mean, float elevation_sd, int n_replicate, float upper_limit
 );

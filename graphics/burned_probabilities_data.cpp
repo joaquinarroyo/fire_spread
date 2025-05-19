@@ -12,7 +12,7 @@
 #define ELEVATION_SD 399.5f
 #define UPPER_LIMIT 0.5f
 #ifndef N_REPLICATES
-#define N_REPLICATES 100
+#define N_REPLICATES 1000
 #endif
 #define FILENAME "graphics/simdata/burned_probabilities_data.txt"
 

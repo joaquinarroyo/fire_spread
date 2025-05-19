@@ -118,14 +118,14 @@ for (size_t n = 0; n < 8; ++n) {
 
 Utilizando data __1999_27j_S__:
 
-![](../final_plots/output_2.png)
+![](../final_plots/v2/output.png)
 
 ## Performance/Tiempo vs. tamaño del problema
 
-![](../final_plots/burned_probabilities_perf_2.png)
+![](../final_plots/v2/burned_probabilities_perf.png)
 
 
-![](../final_plots/burned_probabilities_time_2.png)
+![](../final_plots/v2/burned_probabilities_time.png)
 
 ## Conclusiones
 
