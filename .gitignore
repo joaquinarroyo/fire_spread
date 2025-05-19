@@ -13,3 +13,7 @@ data.zip
 
 plots/*.png
 stats/*.txt
+
+roofline
+roofline_2
+roofline_3

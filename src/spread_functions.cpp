@@ -28,7 +28,7 @@ const Cell& get_default_cell() {
   return default_cell;
 }
 
-std::array<float, 8> spread_probability(
+inline std::array<float, 8> spread_probability(
     const Cell& burning, 
     const std::array<float, 8> elevations,
     const std::array<float, 8> vegetation_types,

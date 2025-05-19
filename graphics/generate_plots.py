@@ -37,7 +37,7 @@ def read_perf_data(name, versions):
         with open(FILENAME.format(name, version), "r") as file:
             lines = file.readlines()
             for line in lines:
-                cells, max_metric, time = line.split(",")
+                _, cells, max_metric, time = line.split(",")
                 if cells in inner_data.keys():
                     inner_data[int(cells)].append((float(max_metric), float(time)))
                 else:

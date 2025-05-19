@@ -1,10 +1,11 @@
 # Compilador por defecto
 CXX ?= g++
-CXXFLAGS = -Wall -Wextra -Werror -fopenmp
+CXXFLAGS = -Wall -Wextra -Werror -fopenmp -g -I$(HOME)/intel/oneapi/advisor/latest/include
 INCLUDE = -I./src
 
 # Optimizaciones seguras por defecto
-CCXOPTIMIZATIONS = -O2 -ffast-math -funroll-loops -ftree-vectorize -march=native -funsafe-math-optimizations -fno-math-errno
+# CCXOPTIMIZATIONS = -O2 -ffast-math -funroll-loops -ftree-vectorize -march=native -funsafe-math-optimizations -fno-math-errno
+CCXOPTIMIZATIONS = -O2 -g -fopenmp -ftree-vectorize -fno-inline
 
 # Comando de compilación
 CXXCMD = $(CXX) $(CXXFLAGS) $(CCXOPTIMIZATIONS) $(INCLUDE)

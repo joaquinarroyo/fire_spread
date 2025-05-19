@@ -6,6 +6,7 @@
 #include <fstream>
 #include <algorithm>
 #include <numeric>
+#include <advisor-annotate.h>
 #include "fires.hpp"
 #define PERF_FILENAME "graphics/simdata/burned_probabilities_perf_data_"
 
@@ -38,35 +39,38 @@ Matrix<size_t> burned_amounts_per_cell(
       float local_max_metric = 0.0f;
       float local_total_time_taken = 0.0f;
 
+      ANNOTATE_SITE_BEGIN(simulation_loop);
       #pragma omp for schedule(dynamic, 10)
       for (size_t i = 0; i < n_replicates; i++) {
-          Fire fire = simulate_fire(
-              landscape_vec, n_row, n_col, ignition_cells, params,
-              distance, elevation_mean, elevation_sd, upper_limit
-          );
+        ANNOTATE_ITERATION_TASK(loop1);
+        Fire fire = simulate_fire(
+          landscape_vec, n_row, n_col, ignition_cells, params,
+          distance, elevation_mean, elevation_sd, upper_limit
+        );
 
-          float metric = fire.processed_cells / (fire.time_taken * 1e6);
-          local_max_metric = std::max(local_max_metric, metric);
-          local_total_time_taken += fire.time_taken;
+        float metric = fire.processed_cells / (fire.time_taken * 1e6);
+        local_max_metric = std::max(local_max_metric, metric);
+        local_total_time_taken += fire.time_taken;
 
-          for (size_t col = 0; col < n_col; col++) {
-              for (size_t row = 0; row < n_row; row++) {
-                  if (fire.burned_layer[utils::INDEX(col, row, n_col)]) {
-                      local_burned_amounts[{col, row}] += 1;
-                  }
-              }
+        for (size_t col = 0; col < n_col; col++) {
+          for (size_t row = 0; row < n_row; row++) {
+            if (fire.burned_layer[utils::INDEX(col, row, n_col)]) {
+              local_burned_amounts[{col, row}] += 1;
+            }
           }
+        }
       }
+      ANNOTATE_SITE_END();
 
       // Reducción de métricas y capas quemadas
       #pragma omp critical
       {
-          for (size_t col = 0; col < n_col; col++) {
-              for (size_t row = 0; row < n_row; row++) {
-                  burned_amounts[{col, row}] += local_burned_amounts[{col, row}];
-              }
+        for (size_t col = 0; col < n_col; col++) {
+          for (size_t row = 0; row < n_row; row++) {
+            burned_amounts[{col, row}] += local_burned_amounts[{col, row}];
           }
-          max_metric = std::max(max_metric, local_max_metric);
+        }
+        max_metric = std::max(max_metric, local_max_metric);
       }
 
       // Guardar tiempo total por thread
