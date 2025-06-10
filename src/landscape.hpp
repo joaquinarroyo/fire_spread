@@ -2,6 +2,7 @@
 
 #include "csv.hpp"
 #include "matrix.hpp"
+#include <cstdint>
 
 // enum of vegetation type between: matorral, subalpine, wet, dry
 enum VegetationType {
@@ -13,26 +14,20 @@ enum VegetationType {
 
 static_assert( sizeof(VegetationType) == 1 );
 
-struct Cell {
-  float elevation;
-  float wind_direction;
-  float fwi;
-  float aspect;
-  bool burnable;
-  VegetationType vegetation_type;
+struct LandscapeSoA {
+  size_t width, height;
+
+  std::vector<float> elevation;
+  std::vector<float> fwi;
+  std::vector<float> aspect;
+  std::vector<float> vegetation_type;
+  std::vector<float> wind_dir;
+  std::vector<uint8_t> burnable;
+
+  LandscapeSoA(size_t width, size_t height);
+  LandscapeSoA(std::string metadata_filename, std::string data_filename);
+
+  ~LandscapeSoA() = default;
 };
 
-struct Landscape {
-  size_t width;
-  size_t height;
 
-  Landscape(size_t width, size_t height);
-  Landscape(std::string metadata_filename, std::string data_filename);
-
-  Cell operator[](std::pair<size_t, size_t> index) const;
-  Cell& operator[](std::pair<size_t, size_t> index);
-
-  Matrix<Cell> cells;
-
-  std::vector<Cell> to_flat_vector() const;
-};

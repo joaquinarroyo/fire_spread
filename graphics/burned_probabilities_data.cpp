@@ -5,14 +5,14 @@
 #include "ignition_cells.hpp"
 #include "landscape.hpp"
 #include "many_simulations.hpp"
-#include "spread_functions.hpp"
+#include "spread_functions.cuh"
 
 #define DISTANCE 30.0f
 #define ELEVATION_MEAN 1163.3f
 #define ELEVATION_SD 399.5f
 #define UPPER_LIMIT 0.5f
 #ifndef N_REPLICATES
-#define N_REPLICATES 1000
+#define N_REPLICATES 100
 #endif
 #define FILENAME "graphics/simdata/burned_probabilities_data.txt"
 
@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
     std::string output_filename_suffix = argv[2];
 
     // read the landscape
-    Landscape landscape(landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv");
+    LandscapeSoA landscape(landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv");
 
     // read the ignition cells
     IgnitionCells ignition_cells =

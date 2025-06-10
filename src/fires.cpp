@@ -44,20 +44,20 @@ Fire empty_fire(size_t width, size_t height) {
   return { width, height, 0, 0, std::vector<int>(width * height), {}, {}, {} };
 }
 
-FireStats get_fire_stats(const Fire& fire, const Landscape& landscape) {
+FireStats get_fire_stats(const Fire& fire, const LandscapeSoA& landscape) {
 
   FireStats stats = { 0, 0, 0, 0 };
   size_t n = fire.burned_ids_0.size();
   for (size_t i = 0; i < n; i++) {
     size_t x = fire.burned_ids_0[i];
     size_t y = fire.burned_ids_1[i];
-    Cell cell = landscape[{ x, y }];
+    size_t idx = utils::INDEX(x, y, landscape.width);
 
-    if (cell.vegetation_type == SUBALPINE) {
+    if (landscape.vegetation_type[idx] == SUBALPINE) {
       stats.counts_veg_subalpine++;
-    } else if (cell.vegetation_type == WET) {
+    } else if (landscape.vegetation_type[idx] == WET) {
       stats.counts_veg_wet++;
-    } else if (cell.vegetation_type == DRY) {
+    } else if (landscape.vegetation_type[idx] == DRY) {
       stats.counts_veg_dry++;
     } else {
       stats.counts_veg_matorral++;

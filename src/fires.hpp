@@ -40,7 +40,7 @@ struct FireStats {
   size_t counts_veg_dry;
 };
 
-FireStats get_fire_stats(const Fire& fire, const Landscape& landscape);
+FireStats get_fire_stats(const Fire& fire, const LandscapeSoA& landscape);
 
 namespace utils {
   inline size_t INDEX(size_t x, size_t y, size_t width) {

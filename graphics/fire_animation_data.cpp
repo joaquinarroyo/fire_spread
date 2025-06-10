@@ -6,7 +6,7 @@
 #include "ignition_cells.hpp"
 #include "landscape.hpp"
 #include "many_simulations.hpp"
-#include "spread_functions.hpp"
+#include "spread_functions.cuh"
 
 #define DISTANCE 30
 #define ELEVATION_MEAN 1163.3
@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     std::string landscape_file_prefix = argv[1];
 
     // read the landscape
-    Landscape landscape(landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv");
+    LandscapeSoA landscape(landscape_file_prefix + "-metadata.csv", landscape_file_prefix + "-landscape.csv");
 
     // read the ignition cells
     IgnitionCells ignition_cells =
@@ -48,10 +48,9 @@ int main(int argc, char* argv[]) {
     int n_row = landscape.height;
     int n_col = landscape.width;
     Fire fire = empty_fire(n_row, n_col);
-    std::vector<Cell> landscape_vec = landscape.to_flat_vector();
     for (size_t i = 0; i < N_REPLICATES; i++) {
       Fire fire = simulate_fire(
-        landscape_vec, n_row, n_col, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, i, UPPER_LIMIT
+        landscape, n_row, n_col, ignition_cells, params, DISTANCE, ELEVATION_MEAN, ELEVATION_SD, i, UPPER_LIMIT
       );
       double time_taken = fire.time_taken;
       double metric = fire.processed_cells / (time_taken * 1e6);
