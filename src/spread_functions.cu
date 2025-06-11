@@ -25,23 +25,19 @@ struct FireKernelParams {
     const uint8_t* burnable;
 
     int* burned_bin;
-    int width;
-    int height;
+    const int width;
+    const int height;
 
-    const int* burned_ids_0;
-    const int* burned_ids_1;
-    int burned_size;
-
-    int* new_burned_ids_0;
-    int* new_burned_ids_1;
-    int* new_burned_count;
-
-    float distance;
-    float upper_limit;
-    float elevation_mean;
-    float elevation_sd;
-
+    unsigned int* processed_cells;
+    
     const SimulationParams* params;
+
+    const float distance;
+    const float upper_limit;
+    const float elevation_mean;
+    const float elevation_sd;
+
+    const int rng_seed;
 };
 
 constexpr float PIf = 3.1415927f;
@@ -56,13 +52,17 @@ int h_moves[8][2] = {
 __constant__ float d_angles[8];
 __constant__ int d_moves[8][2];
 
-// RNG simple por thread (XORShift32)
-__device__ uint32_t xorshift32(uint32_t& state) {
-    state ^= state << 13;
-    state ^= state >> 17;
-    state ^= state << 5;
-    return state;
+__global__ void init_rng_kernel(curandState* states, int width, int height, int seed) {
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    int total = width * height;
+    if (tid < total) {
+        int i = tid % width;
+        int j = tid / width;
+        unsigned long long cell_seed = seed ^ (i * 73856093) ^ (j * 19349663);
+        curand_init(cell_seed, 0, 0, &states[tid]);
+    }
 }
+
 
 __device__ void spread_probability_device(
     float burning_elevation,
@@ -76,7 +76,7 @@ __device__ void spread_probability_device(
     float distance,
     float elevation_mean,
     float elevation_sd,
-    float* probs_out // salida de 8 elementos
+    float* probs_out
 ) {
     for (int n = 0; n < 8; n++) {
         float slope_term = __sinf(atanf((elevations[n] - burning_elevation) / distance));
@@ -101,8 +101,16 @@ __device__ void spread_probability_device(
     }
 }
 
-__global__ void fire_step_kernel(FireKernelParams args) {
-    // Desempaquetar argumentos para facilitar el uso
+__global__ void fire_persistent_kernel(
+    FireKernelParams args,
+    int* frontier_0, int* frontier_1,
+    int* frontier_size,
+    int* next_frontier_0, int* next_frontier_1,
+    int* next_frontier_count,
+    int* done_flag,
+    int* in_next_frontier,
+    curandState* rng_states
+) {
     const float* elevation = args.elevation;
     const float* fwi = args.fwi;
     const float* aspect = args.aspect;
@@ -113,83 +121,116 @@ __global__ void fire_step_kernel(FireKernelParams args) {
     int* burned_bin = args.burned_bin;
     int width = args.width;
     int height = args.height;
-
-    const int* burned_ids_0 = args.burned_ids_0;
-    const int* burned_ids_1 = args.burned_ids_1;
-    int burned_size = args.burned_size;
-
-    int* new_burned_ids_0 = args.new_burned_ids_0;
-    int* new_burned_ids_1 = args.new_burned_ids_1;
-    int* new_burned_count = args.new_burned_count;
+    const SimulationParams* params = args.params;
 
     float distance = args.distance;
     float upper_limit = args.upper_limit;
     float elevation_mean = args.elevation_mean;
     float elevation_sd = args.elevation_sd;
 
-    const SimulationParams* params = args.params;
+    unsigned int local_processed_cells = 0;
 
-    // ---- Código original del kernel a partir de acá ----
-    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-    if (idx >= burned_size) return;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
+    while (!*done_flag) {
+        int frontier_len = *frontier_size;
 
-    // Setup RNG con una semilla diferente por thread
-    curandState state;
-    curand_init(1234ULL, /* seed */
-             idx,     /* sequence: hace que cada hilo tenga su propia secuencia */
-             0,       /* offset */
-             &state);
+        for (int idx = tid; idx < frontier_len; idx += gridDim.x * blockDim.x) {
+            int i = frontier_0[idx];
+            int j = frontier_1[idx];
+            int center_idx = j * width + i;
 
-    int i = burned_ids_0[idx];
-    int j = burned_ids_1[idx];
+            curandState local_state = rng_states[center_idx];
 
-    int center_idx = j * width + i;
+            float elev_c = elevation[center_idx];
+            float wind_c = wind_dir[center_idx];
 
-    float elev_c = elevation[center_idx];
-    float wind_c = wind_dir[center_idx];
+            int n_coords_0[8], n_coords_1[8];
+            int n_indices[8];
+            uint8_t n_out_flags[8];
+            float n_elev[8], n_fwi[8], n_asp[8], n_veg[8], n_burn[8], n_upper[8];
 
-    float elevations[8], fwis[8], aspects[8], vegtypes[8], upper_limits[8];
-    for (int n = 0; n < 8; ++n) {
-        int ni = i + d_moves[n][0];
-        int nj = j + d_moves[n][1];
-        if (ni < 0 || nj < 0 || ni >= width || nj >= height) {
-            upper_limits[n] = 0;
-            continue;
-        }
+            for (int n = 0; n < 8; ++n) {
+                int ni = i + d_moves[n][0];
+                int nj = j + d_moves[n][1];
+                n_coords_0[n] = ni;
+                n_coords_1[n] = nj;
 
-        int n_idx = nj * width + ni;
+                if (ni < 0 || nj < 0 || ni >= width || nj >= height) {
+                    n_out_flags[n] = 1;
+                    n_indices[n] = 0;
+                    n_elev[n] = n_fwi[n] = n_asp[n] = n_veg[n] = 0.0f;
+                    n_burn[n] = 0;
+                } else {
+                    int n_idx = nj * width + ni;
+                    n_out_flags[n] = 0;
+                    n_indices[n] = n_idx;
+                    n_elev[n] = elevation[n_idx];
+                    n_fwi[n] = fwi[n_idx];
+                    n_asp[n] = aspect[n_idx];
+                    n_veg[n] = vegetation_type[n_idx];
+                    n_burn[n] = burnable[n_idx];
+                    ++local_processed_cells;
+                }
 
-        elevations[n] = elevation[n_idx];
-        fwis[n] = fwi[n_idx];
-        aspects[n] = aspect[n_idx];
-        vegtypes[n] = vegetation_type[n_idx];
+                uint8_t burnable_mask = (!burned_bin[n_indices[n]] && n_burn[n]);
+                uint8_t valid_mask = !n_out_flags[n] && burnable_mask;
+                n_upper[n] = valid_mask * upper_limit;
+            }
 
-        upper_limits[n] = (!burned_bin[n_idx] && burnable[n_idx]) ? upper_limit : 0.0f;
-    }
+            float n_probs[8];
+            spread_probability_device(
+                elev_c, wind_c,
+                n_elev, n_veg, n_fwi, n_asp, n_upper,
+                params, distance, elevation_mean, elevation_sd,
+                n_probs
+            );
 
-    float probs[8];
-    spread_probability_device(
-        elev_c, wind_c, elevations, vegtypes, fwis, aspects, upper_limits,
-        params, distance, elevation_mean, elevation_sd, probs
-    );
-
-    for (int n = 0; n < 8; ++n) {
-        int ni = i + d_moves[n][0];
-        int nj = j + d_moves[n][1];
-        if (ni < 0 || nj < 0 || ni >= width || nj >= height) continue;
-        int n_idx = nj * width + ni;
-
-        float rand_val = curand_uniform(&state);
-        if (rand_val < probs[n]) {
-            if (atomicExch(&burned_bin[n_idx], 1) == 0) {
-                int pos = atomicAdd(new_burned_count, 1);
-                if (pos < width * height) {
-                    new_burned_ids_0[pos] = ni;
-                    new_burned_ids_1[pos] = nj;
+            for (int n = 0; n < 8; ++n) {
+                if (!burned_bin[n_indices[n]]) {
+                    float rnd = curand_uniform(&local_state);
+                    if (rnd < n_probs[n]) {
+                        if (atomicExch(&burned_bin[n_indices[n]], 1) == 0) {
+                            if (atomicCAS(&in_next_frontier[n_indices[n]], 0, 1) == 0) {
+                                int pos = atomicAdd(next_frontier_count, 1);
+                                next_frontier_0[pos] = n_coords_0[n];
+                                next_frontier_1[pos] = n_coords_1[n];
+                            }
+                        }
+                    }
                 }
             }
+            rng_states[center_idx] = local_state;
         }
+
+
+        __syncthreads();
+
+        for (int idx = tid; idx < width * height; idx += gridDim.x * blockDim.x) {
+            in_next_frontier[idx] = 0;
+        }
+
+        __syncthreads();
+
+        if (tid == 0) {
+            int count = *next_frontier_count;
+            *frontier_size = count;
+            *next_frontier_count = 0;
+            *done_flag = (count == 0);
+        }
+
+        __syncthreads();
+
+        // Swap buffers (simple double buffer swap)
+        int* tmp0 = frontier_0;
+        int* tmp1 = frontier_1;
+        frontier_0 = next_frontier_0;
+        frontier_1 = next_frontier_1;
+        next_frontier_0 = tmp0;
+        next_frontier_1 = tmp1;
     }
+
+    if (local_processed_cells)
+        atomicAdd(args.processed_cells, local_processed_cells);
 }
 
 Fire simulate_fire(
@@ -203,149 +244,144 @@ Fire simulate_fire(
     int n_replicate,
     float upper_limit = 1.0f
 ) {
-    const size_t MAX_BURNED_CELLS = n_row * n_col;
-    n_replicate += 1;
+    const size_t MAX_CELLS = n_row * n_col;
 
-    std::vector<int> h_burned_ids_0;
-    std::vector<int> h_burned_ids_1;
-    h_burned_ids_0.resize(MAX_BURNED_CELLS, -1);
-    h_burned_ids_1.resize(MAX_BURNED_CELLS, -1);
-    std::vector<int> burned_bin(n_row * n_col, 0);
+    std::vector<int> h_burned_ids_0(MAX_CELLS, -1);
+    std::vector<int> h_burned_ids_1(MAX_CELLS, -1);
+    std::vector<int> burned_bin(MAX_CELLS, 0);
 
-    size_t end = ignition_cells.size();
-    size_t burning_size = end;
-
-    for (size_t i = 0; i < end; i++) {
+    for (size_t i = 0; i < ignition_cells.size(); ++i) {
         h_burned_ids_0[i] = ignition_cells[i].first;
         h_burned_ids_1[i] = ignition_cells[i].second;
         burned_bin[utils::INDEX(ignition_cells[i].first, ignition_cells[i].second, n_col)] = 1;
     }
 
     std::vector<size_t> burned_ids_steps;
-    burned_ids_steps.push_back(end);
+    burned_ids_steps.push_back(ignition_cells.size());
 
+    // Copy 'angles' and 'moves' to constant memory
     cudaMemcpyToSymbol(d_angles, h_angles, sizeof(h_angles));
     cudaMemcpyToSymbol(d_moves, h_moves, sizeof(h_moves));
-    
-    // Punteros GPU
-    int *d_burned_ids_0, *d_burned_ids_1;
-    int *d_new_burned_ids_0, *d_new_burned_ids_1;
-    int *d_burned_bin, *d_new_burned_count;
 
-    // Reservar memoria en GPU
-    cudaMalloc(&d_burned_ids_0, MAX_BURNED_CELLS * sizeof(int));
-    cudaMalloc(&d_burned_ids_1, MAX_BURNED_CELLS * sizeof(int));
-    cudaMalloc(&d_new_burned_ids_0, MAX_BURNED_CELLS * sizeof(int));
-    cudaMalloc(&d_new_burned_ids_1, MAX_BURNED_CELLS * sizeof(int));
-    cudaMalloc(&d_burned_bin, n_row * n_col * sizeof(int));
-    cudaMalloc(&d_new_burned_count, sizeof(int));
+    int *d_frontier_0, *d_frontier_1;
+    int *d_next_frontier_0, *d_next_frontier_1;
+    int *d_frontier_size, *d_next_frontier_count, *d_done_flag;
+    int *d_burned_bin;
+    unsigned int *d_processed_cells;
 
-    // Copiar datos iniciales a GPU
-    cudaMemcpy(d_burned_ids_0, h_burned_ids_0.data(), end * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_burned_ids_1, h_burned_ids_1.data(), end * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_burned_bin, burned_bin.data(), n_row * n_col * sizeof(int), cudaMemcpyHostToDevice);
+    // Allocate memory for frontiers, flags and counters
+    cudaMalloc(&d_frontier_0, MAX_CELLS * sizeof(int));
+    cudaMalloc(&d_frontier_1, MAX_CELLS * sizeof(int));
+    cudaMalloc(&d_next_frontier_0, MAX_CELLS * sizeof(int));
+    cudaMalloc(&d_next_frontier_1, MAX_CELLS * sizeof(int));
+    cudaMalloc(&d_frontier_size, sizeof(int));
+    cudaMalloc(&d_next_frontier_count, sizeof(int));
+    cudaMalloc(&d_done_flag, sizeof(int));
+    cudaMalloc(&d_burned_bin, MAX_CELLS * sizeof(int));
+    cudaMalloc(&d_processed_cells, sizeof(unsigned int));
 
-    // Reservar memoria en device
+    int init_size = ignition_cells.size();
+    cudaMemcpy(d_frontier_0, h_burned_ids_0.data(), ignition_cells.size() * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_frontier_1, h_burned_ids_1.data(), ignition_cells.size() * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_frontier_size, &init_size, sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemset(d_next_frontier_count, 0, sizeof(int));
+    cudaMemset(d_done_flag, 0, sizeof(int));
+    cudaMemcpy(d_burned_bin, burned_bin.data(), MAX_CELLS * sizeof(int), cudaMemcpyHostToDevice);
+    cudaMemset(d_processed_cells, 0, sizeof(unsigned int));
+
+    // Copy landscape
     float *d_elevation, *d_fwi, *d_aspect, *d_wind_dir, *d_vegetation_type;
     uint8_t *d_burnable;
+    cudaMalloc(&d_elevation, MAX_CELLS * sizeof(float));
+    cudaMalloc(&d_fwi, MAX_CELLS * sizeof(float));
+    cudaMalloc(&d_aspect, MAX_CELLS * sizeof(float));
+    cudaMalloc(&d_wind_dir, MAX_CELLS * sizeof(float));
+    cudaMalloc(&d_vegetation_type, MAX_CELLS * sizeof(float));
+    cudaMalloc(&d_burnable, MAX_CELLS * sizeof(uint8_t));
 
-    cudaMalloc(&d_elevation, n_row * n_col * sizeof(float));
-    cudaMalloc(&d_fwi, n_row * n_col * sizeof(float));
-    cudaMalloc(&d_aspect, n_row * n_col * sizeof(float));
-    cudaMalloc(&d_wind_dir, n_row * n_col * sizeof(float));
-    cudaMalloc(&d_vegetation_type, n_row * n_col * sizeof(float));
-    cudaMalloc(&d_burnable, n_row * n_col * sizeof(uint8_t));
+    cudaMemcpy(d_elevation, landscape.elevation.data(), MAX_CELLS * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_fwi, landscape.fwi.data(), MAX_CELLS * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_aspect, landscape.aspect.data(), MAX_CELLS * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_wind_dir, landscape.wind_dir.data(), MAX_CELLS * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_vegetation_type, landscape.vegetation_type.data(), MAX_CELLS * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(d_burnable, landscape.burnable.data(), MAX_CELLS * sizeof(uint8_t), cudaMemcpyHostToDevice);
 
-    // Copiar datos del host al device
-    cudaMemcpy(d_elevation, landscape.elevation.data(), n_row * n_col * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_fwi, landscape.fwi.data(), n_row * n_col * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_aspect, landscape.aspect.data(), n_row * n_col * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_wind_dir, landscape.wind_dir.data(), n_row * n_col * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_vegetation_type, landscape.vegetation_type.data(), n_row * n_col * sizeof(float), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_burnable, landscape.burnable.data(), n_row * n_col * sizeof(uint8_t), cudaMemcpyHostToDevice);
+    int *d_in_next_frontier;
+    cudaMalloc(&d_in_next_frontier, MAX_CELLS * sizeof(int));
+    cudaMemset(d_in_next_frontier, 0, MAX_CELLS * sizeof(int));
 
+    // Copy simulation params
     SimulationParams* d_params;
     cudaMalloc(&d_params, sizeof(SimulationParams));
     cudaMemcpy(d_params, &params, sizeof(SimulationParams), cudaMemcpyHostToDevice);
 
-    // Comenzar simulación
+    // Prepare kernel arguments
+    FireKernelParams args = {
+        d_elevation, d_fwi, d_aspect, d_wind_dir, d_vegetation_type,
+        d_burnable, d_burned_bin,
+        static_cast<int>(n_col), static_cast<int>(n_row),
+        d_processed_cells,
+        d_params,
+        distance, upper_limit, elevation_mean, elevation_sd,
+        123 + n_replicate
+    };
+
+    // Launch the kernels
+    int threads = 512;
+    int blocks = (MAX_CELLS + threads - 1) / threads;
+
+    // Initialize RNG states
+    curandState* d_rng_states;
+    cudaMalloc(&d_rng_states, MAX_CELLS * sizeof(curandState));
+    init_rng_kernel<<<blocks, threads>>>(d_rng_states, n_col, n_row, 123 + n_replicate);
+
+    // Initialize the fire simulation
     double start_time = omp_get_wtime();
-    unsigned int processed_cells = 0;
+    fire_persistent_kernel<<<blocks, threads>>>(
+        args,
+        d_frontier_0, d_frontier_1, d_frontier_size,
+        d_next_frontier_0, d_next_frontier_1, d_next_frontier_count,
+        d_done_flag,
+        d_in_next_frontier,
+        d_rng_states
+    );
+    cudaDeviceSynchronize();
 
-    cudaMemcpy(d_burned_ids_0, h_burned_ids_0.data(), end * sizeof(int), cudaMemcpyHostToDevice);
-    cudaMemcpy(d_burned_ids_1, h_burned_ids_1.data(), end * sizeof(int), cudaMemcpyHostToDevice);
-
-    int* current_burned_ids_0 = d_burned_ids_0;
-    int* current_burned_ids_1 = d_burned_ids_1;
-    int* next_burned_ids_0 = d_new_burned_ids_0;
-    int* next_burned_ids_1 = d_new_burned_ids_1;
-
-    while (burning_size > 0) {
-        int threads = 256;
-        int blocks = (burning_size + threads - 1) / threads;
-
-        cudaMemset(d_new_burned_count, 0, sizeof(int));
-
-        FireKernelParams args = {
-            d_elevation, d_fwi, d_aspect, d_wind_dir, d_vegetation_type, d_burnable,
-            d_burned_bin, static_cast<int>(n_col), static_cast<int>(n_row),
-            current_burned_ids_0, current_burned_ids_1,
-            static_cast<int>(burning_size),
-            next_burned_ids_0, next_burned_ids_1, d_new_burned_count,
-            distance, upper_limit, elevation_mean, elevation_sd,
-            d_params
-        };
-
-        fire_step_kernel<<<blocks, threads>>>(args);
-
-        cudaError_t err = cudaGetLastError();
-        if (err != cudaSuccess) {
-            printf("[CUDA ERROR] %s\n", cudaGetErrorString(err));
-            break;
-        }
-
-        int new_count;
-        cudaMemcpy(&new_count, d_new_burned_count, sizeof(int), cudaMemcpyDeviceToHost);
-
-        // Copiar los nuevos IDs al host al final (sin memcpy hacia device)
-        cudaMemcpy(h_burned_ids_0.data() + end, next_burned_ids_0, new_count * sizeof(int), cudaMemcpyDeviceToHost);
-        cudaMemcpy(h_burned_ids_1.data() + end, next_burned_ids_1, new_count * sizeof(int), cudaMemcpyDeviceToHost);
-
-        end += new_count;
-        burning_size = new_count;
-        processed_cells += new_count;
-        burned_ids_steps.push_back(end);
-
-        // Swap de buffers
-        std::swap(current_burned_ids_0, next_burned_ids_0);
-        std::swap(current_burned_ids_1, next_burned_ids_1);
+    if (cudaGetLastError() != cudaSuccess) {
+        std::cerr << "CUDA error: " << cudaGetErrorString(cudaGetLastError()) << std::endl;
     }
 
     double end_time = omp_get_wtime();
     double time_taken = end_time - start_time;
 
-    cudaMemcpy(burned_bin.data(), d_burned_bin, n_row * n_col * sizeof(int), cudaMemcpyDeviceToHost);
+    // Copy results
+    cudaMemcpy(burned_bin.data(), d_burned_bin, MAX_CELLS * sizeof(int), cudaMemcpyDeviceToHost);
+    std::vector<size_t> ids_0, ids_1;
+    for (size_t j = 0; j < n_row; ++j) {
+        for (size_t i = 0; i < n_col; ++i) {
+            if (burned_bin[utils::INDEX(i, j, n_col)]) {
+                ids_0.push_back(i);
+                ids_1.push_back(j);
+            }
+        }
+    }
 
-    // Liberar memoria
-    cudaFree(d_burned_ids_0);
-    cudaFree(d_burned_ids_1);
-    cudaFree(d_new_burned_ids_0);
-    cudaFree(d_new_burned_ids_1);
-    cudaFree(d_burned_bin);
-    cudaFree(d_new_burned_count);
+    // Copy processed cells count
+    unsigned int processed_cells;
+    cudaMemcpy(&processed_cells, d_processed_cells, sizeof(unsigned int), cudaMemcpyDeviceToHost);
 
-    cudaFree(d_elevation);
-    cudaFree(d_fwi);
-    cudaFree(d_aspect);
-    cudaFree(d_wind_dir);
-    cudaFree(d_vegetation_type);
-    cudaFree(d_burnable);
+    // Free device memory
+    cudaFree(d_frontier_0); cudaFree(d_frontier_1);
+    cudaFree(d_next_frontier_0); cudaFree(d_next_frontier_1);
+    cudaFree(d_frontier_size); cudaFree(d_next_frontier_count); cudaFree(d_done_flag);
+    cudaFree(d_burned_bin); cudaFree(d_processed_cells);
 
-    std::vector<size_t> ids_0_size_t(h_burned_ids_0.begin(), h_burned_ids_0.begin() + end);
-    std::vector<size_t> ids_1_size_t(h_burned_ids_1.begin(), h_burned_ids_1.begin() + end);
+    cudaFree(d_elevation); cudaFree(d_fwi); cudaFree(d_aspect);
+    cudaFree(d_wind_dir); cudaFree(d_vegetation_type); cudaFree(d_burnable);
+    cudaFree(d_params);
 
     return Fire{
-      n_col, n_row, processed_cells, time_taken,
-      burned_bin, ids_0_size_t, ids_1_size_t, burned_ids_steps
+        n_col, n_row, processed_cells, time_taken,
+        burned_bin, ids_0, ids_1, burned_ids_steps
     };
 }
