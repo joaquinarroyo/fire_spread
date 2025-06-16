@@ -33,9 +33,6 @@ for rep in $(seq 1 $reps); do
   echo "Repetición $rep"
   i=0
   for name in "${data[@]}"; do
-    export OMP_NUM_THREADS=10
-    export OMP_PROC_BIND=spread
-    export OMP_PLACES=threads
     echo "$i. Ejecutando $program sobre $name (Repetición $rep)"
     ./graphics/$program ./data/$name 2>&1 $2 | tee ./stats/rep${rep}_${i}_${name}.txt
     i=$((i+1))

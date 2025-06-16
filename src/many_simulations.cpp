@@ -28,6 +28,7 @@ Matrix<size_t> burned_amounts_per_cell(
     );
 
     float metric = fire.processed_cells / (fire.time_taken * 1e6);
+    
     max_metric = std::max(max_metric, metric);
     total_time_taken += fire.time_taken;
 
